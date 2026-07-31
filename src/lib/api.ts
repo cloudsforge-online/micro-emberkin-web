@@ -9,7 +9,7 @@
  * valid session.
  */
 import { consumeAuthCallback, signInRedirect, signOutRedirect } from '@cloudsforge/ui'
-import { APP_NAME, apiBase, hosts, pageOrigin } from './hosts.ts'
+import { APP_NAME, apiBase, billingBase, hosts, pageOrigin } from './hosts.ts'
 import { report } from './obs.ts'
 
 /** Nimbus issues and refreshes tokens; it is cross-origin from every app, always. */
@@ -252,10 +252,23 @@ export interface RequestOptions {
   auth?: boolean
   query?: Record<string, string | number | boolean | undefined | null>
   signal?: AbortSignal
+  /**
+   * Extra request headers.
+   *
+   * Added to the template's version for one reason, and it is a correctness one:
+   * `POST /v1/saves/me/battles` REQUIRES an `Idempotency-Key` and rejects the request with a 400
+   * without it (`emberkin/src/server.ts:347-350`). A battle submission that is retried without
+   * that header resolves — and applies to the save — a second time.
+   *
+   * Set on every attempt, including the one after a token refresh, which is why it lives inside
+   * `send()` rather than being merged once: a refreshed retry that dropped the key would be
+   * exactly the double-resolution the key exists to prevent.
+   */
+  headers?: Record<string, string>
 }
 
 async function request<T>(base: string, path: string, opts: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = true, query, signal } = opts
+  const { method = 'GET', body, auth = true, query, signal, headers: extra } = opts
 
   // `base` may be '' (relative, same origin), so resolve against the page origin.
   const url = new URL(base + path, pageOrigin())
@@ -266,7 +279,7 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
   }
 
   const send = async (): Promise<Response> => {
-    const headers: Record<string, string> = { accept: 'application/json' }
+    const headers: Record<string, string> = { accept: 'application/json', ...extra }
     if (body !== undefined) headers['content-type'] = 'application/json'
     const token = getAccessToken()
     if (auth && token) headers['authorization'] = `Bearer ${token}`
@@ -345,9 +358,20 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
   return (await res.json()) as T
 }
 
-/** This app's own API: relative in production, the registry's dev port under `pnpm dev`. */
-export const api = <T,>(path: string, opts?: RequestOptions): Promise<T> =>
+/**
+ * `micro-emberkin` — this game's own service. Always absolute; see `apiBase()`'s note.
+ *
+ * Nothing calls this directly. Every route goes through a named function in `./emberkin.ts`, each
+ * of which cites the `server.ts` line it was verified against. That indirection is not ceremony:
+ * this estate has shipped two clients written against routes that did not exist, and both survived
+ * review because the call site read like an ordinary fetch.
+ */
+export const emberkin = <T,>(path: string, opts?: RequestOptions): Promise<T> =>
   request<T>(apiBase(), path, opts)
+
+/** Billing, for the entitlement read the wardrobe needs. See `./billing.ts`. */
+export const billing = <T,>(path: string, opts?: RequestOptions): Promise<T> =>
+  request<T>(billingBase(), path, opts)
 
 /** Nimbus, which is cross-origin from everywhere. */
 export const nimbus = <T,>(path: string, opts?: RequestOptions): Promise<T> =>
