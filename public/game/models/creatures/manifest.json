@@ -1,0 +1,252 @@
+{
+  "cindercub": {
+    "file": "cindercub.glb",
+    "archetype": "quadruped",
+    "bytes": 119984
+  },
+  "cinderpyre": {
+    "file": "cinderpyre.glb",
+    "archetype": "biped",
+    "bytes": 116412
+  },
+  "flarelynx": {
+    "file": "flarelynx.glb",
+    "archetype": "quadruped",
+    "bytes": 122144
+  },
+  "hearthmane": {
+    "file": "hearthmane.glb",
+    "archetype": "quadruped",
+    "bytes": 118984
+  },
+  "tidepup": {
+    "file": "tidepup.glb",
+    "archetype": "quadruped",
+    "bytes": 139152
+  },
+  "tidalhound": {
+    "file": "tidalhound.glb",
+    "archetype": "quadruped",
+    "bytes": 140352
+  },
+  "maelhound": {
+    "file": "maelhound.glb",
+    "archetype": "quadruped",
+    "bytes": 141400
+  },
+  "lumitide": {
+    "file": "lumitide.glb",
+    "archetype": "aquatic",
+    "bytes": 55852
+  },
+  "seedling": {
+    "file": "seedling.glb",
+    "archetype": "critter",
+    "bytes": 111672
+  },
+  "thornling": {
+    "file": "thornling.glb",
+    "archetype": "critter",
+    "bytes": 111880
+  },
+  "bramblejaw": {
+    "file": "bramblejaw.glb",
+    "archetype": "biped",
+    "bytes": 135848
+  },
+  "bloomward": {
+    "file": "bloomward.glb",
+    "archetype": "spirit",
+    "bytes": 64020
+  },
+  "breezlet": {
+    "file": "breezlet.glb",
+    "archetype": "avian",
+    "bytes": 103136
+  },
+  "skywisp": {
+    "file": "skywisp.glb",
+    "archetype": "avian",
+    "bytes": 103316
+  },
+  "galestrike": {
+    "file": "galestrike.glb",
+    "archetype": "avian",
+    "bytes": 103408
+  },
+  "pebblit": {
+    "file": "pebblit.glb",
+    "archetype": "biped",
+    "bytes": 134496
+  },
+  "boulderling": {
+    "file": "boulderling.glb",
+    "archetype": "golem",
+    "bytes": 58356
+  },
+  "cragmaw": {
+    "file": "cragmaw.glb",
+    "archetype": "quadruped",
+    "bytes": 140508
+  },
+  "joltmouse": {
+    "file": "joltmouse.glb",
+    "archetype": "critter",
+    "bytes": 93040
+  },
+  "voltrat": {
+    "file": "voltrat.glb",
+    "archetype": "critter",
+    "bytes": 93008
+  },
+  "frostkit": {
+    "file": "frostkit.glb",
+    "archetype": "quadruped",
+    "bytes": 139132
+  },
+  "glacielle": {
+    "file": "glacielle.glb",
+    "archetype": "biped",
+    "bytes": 134648
+  },
+  "borealynx": {
+    "file": "borealynx.glb",
+    "archetype": "quadruped",
+    "bytes": 141380
+  },
+  "shadepup": {
+    "file": "shadepup.glb",
+    "archetype": "quadruped",
+    "bytes": 118920
+  },
+  "nocthound": {
+    "file": "nocthound.glb",
+    "archetype": "quadruped",
+    "bytes": 120224
+  },
+  "umbrawulf": {
+    "file": "umbrawulf.glb",
+    "archetype": "quadruped",
+    "bytes": 121276
+  },
+  "gleamoth": {
+    "file": "gleamoth.glb",
+    "archetype": "avian",
+    "bytes": 84120
+  },
+  "radimoth": {
+    "file": "radimoth.glb",
+    "archetype": "avian",
+    "bytes": 84124
+  },
+  "mossbug": {
+    "file": "mossbug.glb",
+    "archetype": "insectoid",
+    "bytes": 82720
+  },
+  "beetlord": {
+    "file": "beetlord.glb",
+    "archetype": "biped",
+    "bytes": 133748
+  },
+  "finnling": {
+    "file": "finnling.glb",
+    "archetype": "aquatic",
+    "bytes": 74164
+  },
+  "razorfin": {
+    "file": "razorfin.glb",
+    "archetype": "aquatic",
+    "bytes": 74400
+  },
+  "zaplet": {
+    "file": "zaplet.glb",
+    "archetype": "biped",
+    "bytes": 113804
+  },
+  "stormcrow": {
+    "file": "stormcrow.glb",
+    "archetype": "avian",
+    "bytes": 84120
+  },
+  "coalcrawl": {
+    "file": "coalcrawl.glb",
+    "archetype": "biped",
+    "bytes": 115892
+  },
+  "magmaw": {
+    "file": "magmaw.glb",
+    "archetype": "quadruped",
+    "bytes": 119032
+  },
+  "snowseal": {
+    "file": "snowseal.glb",
+    "archetype": "quadruped",
+    "bytes": 139140
+  },
+  "tidalrus": {
+    "file": "tidalrus.glb",
+    "archetype": "quadruped",
+    "bytes": 140344
+  },
+  "oreling": {
+    "file": "oreling.glb",
+    "archetype": "golem",
+    "bytes": 56816
+  },
+  "ferralit": {
+    "file": "ferralit.glb",
+    "archetype": "golem",
+    "bytes": 57680
+  },
+  "bastion": {
+    "file": "bastion.glb",
+    "archetype": "golem",
+    "bytes": 58364
+  },
+  "driftwisp": {
+    "file": "driftwisp.glb",
+    "archetype": "avian",
+    "bytes": 103340
+  },
+  "sporeling": {
+    "file": "sporeling.glb",
+    "archetype": "insectoid",
+    "bytes": 82908
+  },
+  "duskmoth": {
+    "file": "duskmoth.glb",
+    "archetype": "avian",
+    "bytes": 84172
+  },
+  "dawnfawn": {
+    "file": "dawnfawn.glb",
+    "archetype": "avian",
+    "bytes": 84044
+  },
+  "mistling": {
+    "file": "mistling.glb",
+    "archetype": "aquatic",
+    "bytes": 74396
+  },
+  "arcbulb": {
+    "file": "arcbulb.glb",
+    "archetype": "critter",
+    "bytes": 93212
+  },
+  "nyxaroth": {
+    "file": "nyxaroth.glb",
+    "archetype": "spirit",
+    "bytes": 63916
+  },
+  "solaris": {
+    "file": "solaris.glb",
+    "archetype": "spirit",
+    "bytes": 65648
+  },
+  "aetherion": {
+    "file": "aetherion.glb",
+    "archetype": "quadruped",
+    "bytes": 120852
+  }
+}

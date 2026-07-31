@@ -1,0 +1,43 @@
+{
+  "fur": {
+    "albedo": "fur_albedo.png",
+    "normal": "fur_normal.png",
+    "mr": "fur_mr.png"
+  },
+  "scale": {
+    "albedo": "scale_albedo.png",
+    "normal": "scale_normal.png",
+    "mr": "scale_mr.png"
+  },
+  "chitin": {
+    "albedo": "chitin_albedo.png",
+    "normal": "chitin_normal.png",
+    "mr": "chitin_mr.png"
+  },
+  "stone": {
+    "albedo": "stone_albedo.png",
+    "normal": "stone_normal.png",
+    "mr": "stone_mr.png"
+  },
+  "crystal": {
+    "albedo": "crystal_albedo.png",
+    "normal": "crystal_normal.png",
+    "mr": "crystal_mr.png"
+  },
+  "ice": {
+    "albedo": "ice_albedo.png",
+    "normal": "ice_normal.png",
+    "mr": "ice_mr.png"
+  },
+  "metal": {
+    "albedo": "metal_albedo.png",
+    "normal": "metal_normal.png",
+    "mr": "metal_mr.png"
+  },
+  "energy": {
+    "albedo": "energy_albedo.png",
+    "normal": "energy_normal.png",
+    "mr": "energy_mr.png",
+    "emissive": "energy_emissive.png"
+  }
+}

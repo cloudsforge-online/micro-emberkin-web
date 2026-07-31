@@ -1,0 +1,50 @@
+{
+  "rock_spire": {
+    "file": "rock_spire.glb",
+    "bytes": 2456
+  },
+  "ice_shard": {
+    "file": "ice_shard.glb",
+    "bytes": 2068
+  },
+  "tree_trunk": {
+    "file": "tree_trunk.glb",
+    "bytes": 3232
+  },
+  "tree_canopy": {
+    "file": "tree_canopy.glb",
+    "bytes": 8616
+  },
+  "mushroom": {
+    "file": "mushroom.glb",
+    "bytes": 14184
+  },
+  "island": {
+    "file": "island.glb",
+    "bytes": 4272
+  },
+  "pillar": {
+    "file": "pillar.glb",
+    "bytes": 3508
+  },
+  "pillar_cap": {
+    "file": "pillar_cap.glb",
+    "bytes": 2324
+  },
+  "arch": {
+    "file": "arch.glb",
+    "bytes": 13212
+  },
+  "monolith": {
+    "file": "monolith.glb",
+    "bytes": 2348
+  },
+  "windmill": {
+    "file": "windmill.glb",
+    "bytes": 7856
+  },
+  "boulder": {
+    "file": "boulder.glb",
+    "bytes": 9652
+  }
+}

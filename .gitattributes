@@ -1,0 +1,4 @@
+# The carried-forward art and the procedural glTF bakes are binary; keep git from
+# guessing line endings on them.
+*.png binary
+*.glb binary

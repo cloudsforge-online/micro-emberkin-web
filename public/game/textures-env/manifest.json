@@ -1,0 +1,37 @@
+{
+  "ground": {
+    "albedo": "ground_albedo.png",
+    "normal": "ground_normal.png",
+    "mr": "ground_mr.png"
+  },
+  "rock": {
+    "albedo": "rock_albedo.png",
+    "normal": "rock_normal.png",
+    "mr": "rock_mr.png"
+  },
+  "bark": {
+    "albedo": "bark_albedo.png",
+    "normal": "bark_normal.png",
+    "mr": "bark_mr.png"
+  },
+  "foliage": {
+    "albedo": "foliage_albedo.png",
+    "normal": "foliage_normal.png",
+    "mr": "foliage_mr.png"
+  },
+  "ice": {
+    "albedo": "ice_albedo.png",
+    "normal": "ice_normal.png",
+    "mr": "ice_mr.png"
+  },
+  "crystal": {
+    "albedo": "crystal_albedo.png",
+    "normal": "crystal_normal.png",
+    "mr": "crystal_mr.png"
+  },
+  "metal": {
+    "albedo": "metal_albedo.png",
+    "normal": "metal_normal.png",
+    "mr": "metal_mr.png"
+  }
+}
