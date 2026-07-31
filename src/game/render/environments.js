@@ -7,12 +7,14 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { cloneWithMaterials } from "./assets.js";
+import { PROP_BASE as ASSET_PROP_BASE, ENV_TEX_BASE as ASSET_ENV_TEX_BASE } from "../assetbase.js";
 
 /* ------------------------------------------------------------------ *
  * Baked prop models (tools/bake-props.mjs). Loaded once; cloned + tinted
  * per placement. main.js calls preloadProps() before the first biome.
  * ------------------------------------------------------------------ */
-const PROP_BASE = "../assets/models/biomes/";
+// Addressed through the import seam; see ../assetbase.js.
+const PROP_BASE = ASSET_PROP_BASE;
 const PROP_NAMES = [
   "rock_spire", "ice_shard", "tree_trunk", "tree_canopy", "mushroom",
   "island", "windmill", "pillar", "pillar_cap", "arch",
@@ -42,7 +44,7 @@ function makeProp(name) {
  * Shared environment texture library (loaded once, cached).
  * Paths resolve relative to the page (web/game/index.html).
  * ------------------------------------------------------------------ */
-const ENV_TEX_BASE = "../assets/textures/env/";
+const ENV_TEX_BASE = ASSET_ENV_TEX_BASE;
 const _texLoader = new THREE.TextureLoader();
 const _texCache = new Map();
 

@@ -25,9 +25,17 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
 
+    // The carried-forward render layer is JavaScript and stays JavaScript: 2,100 lines of working
+    // Three.js, restructured rather than rewritten. It is `allowJs` so Vite and tsc agree about
+    // it, and NOT `checkJs`, because type-checking somebody else's untyped render code produces a
+    // thousand errors and zero bugs found. Its edge is typed instead, once, in game/stage.ts —
+    // which is the only surface the rest of the app touches.
+    "allowJs": true,
+    "checkJs": false,
+
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": ["src", "test", "tools", "vite.config.ts"]
 }

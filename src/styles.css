@@ -1,0 +1,1304 @@
+/**
+ * This app's own layer, on top of @cloudsforge/ui.
+ *
+ * Two prefixes, and the split is deliberate:
+ *
+ *   `wt-`  the template's four states — loading, empty, failed, forbidden — carried forward
+ *          unchanged along with `components/states.tsx`, which is shared across the estate.
+ *   `ek-`  everything this game adds.
+ *
+ * Neither can collide with a `cf-` class from the design system. Every colour, space and font is a
+ * token: a literal hex here is a colour that will not follow the substrate, and a page that does
+ * not follow the substrate is the one page in the estate that looks wrong on a dark display. The
+ * ONE exception is `--ek-type-tint`, which a component sets inline from the asset manifest's
+ * recorded art accent — it reaches a border and a glow, never text, and never carries meaning on
+ * its own.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--cf-bg);
+  color: var(--cf-fg);
+  font-family: var(--cf-font, system-ui, sans-serif);
+  /* The bar is dark on every surface; the page follows the substrate. */
+  color-scheme: dark;
+}
+
+.wt-main {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.wt-page__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.wt-page__title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+}
+
+.wt-panel {
+  background: var(--cf-surface-solid);
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.wt-panel__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--cf-fg-dim);
+  font-weight: 600;
+}
+
+.wt-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.wt-banner {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px dashed var(--cf-border, rgba(255, 255, 255, 0.18));
+  color: var(--cf-fg-dim);
+  font-size: 0.85rem;
+}
+
+.wt-note {
+  color: var(--cf-fg-dim);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.wt-link {
+  color: var(--cf-accent);
+}
+
+.wt-facts {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.wt-facts dt {
+  color: var(--cf-fg-mute);
+}
+
+.wt-facts dd {
+  margin: 0;
+}
+
+.wt-facts--mono dd {
+  font-family: var(--cf-font-mono, ui-monospace, monospace);
+  font-size: 0.82rem;
+}
+
+/* ------------------------- the four states ------------------------- */
+
+/*
+ * Loading, empty, failed and forbidden differ in SHAPE and WORDS as well as colour: a reader who
+ * cannot separate two hues still has two other channels telling them which of the four they are
+ * looking at.
+ */
+.wt-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 3rem 1rem;
+  border-radius: 10px;
+}
+
+.wt-state__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.wt-state__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.wt-state__hint,
+.wt-state__meta {
+  margin: 0;
+  color: var(--cf-fg-dim);
+  font-size: 0.875rem;
+  max-width: 34rem;
+}
+
+.wt-state--empty {
+  border: 1px dashed var(--cf-border, rgba(255, 255, 255, 0.14));
+  color: var(--cf-fg-dim);
+}
+
+.wt-state--failed {
+  border: 1px solid var(--cf-critical, #d6412f);
+}
+
+.wt-state--failed .wt-state__icon,
+.wt-state--forbidden .wt-state__icon {
+  color: var(--cf-critical, #d6412f);
+}
+
+.wt-state--forbidden {
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.14));
+  background: var(--cf-bg-sunken);
+}
+
+/*
+ * The request id is the string a user reads down a phone line or pastes into a support form, so
+ * it is monospace, selectable and on a line of its own.
+ */
+.wt-reqid {
+  user-select: all;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--cf-bg-sunken);
+  font-family: var(--cf-font-mono, ui-monospace, monospace);
+}
+
+.wt-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--cf-border, rgba(255, 255, 255, 0.2));
+  border-top-color: var(--cf-accent);
+  animation: wt-spin 0.7s linear infinite;
+}
+
+@keyframes wt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A spinner is decoration; a reader who asked for less motion gets a static ring. */
+@media (prefers-reduced-motion: reduce) {
+  .wt-spinner {
+    animation: none;
+  }
+}
+
+/* ==================================================================================================
+   Emberkin's own layer.
+
+   THREE RULES HOLD THIS FILE TOGETHER, and they are the accessibility rules from the brief made
+   concrete rather than aspirational.
+
+   1. Contrast is measured against the brand ground, #12100f, which is what the generated art was
+      painted against and what `data-cf-substrate="warm"` resolves to. Body text is --cf-fg
+      (bone) and dimmed text is --cf-fg-dim; nothing dimmer than --cf-fg-dim is ever used for a
+      fact, only for a caption that repeats one.
+
+   2. Colour is never the only channel. Every type chip carries its icon and its written name;
+      every meter carries its number and its band; every state carries a shape and a sentence.
+      The nine element hues are ART DIRECTION — see the header of src/lib/types.ts — and several
+      pairs are not separable, so `--ek-type-tint` is confined to a 1px border and a soft glow.
+
+   3. Motion is opt-out AND opt-in-by-default-from-the-OS. Every animated rule sits behind both
+      `@media (prefers-reduced-motion: reduce)` and `[data-ek-reduce-motion='true']`, so the OS
+      setting works with no interaction and the in-app setting works without a reload.
+   ================================================================================================== */
+
+/* ----------------------------- navigation ----------------------------- */
+
+.ek-nav {
+  position: sticky;
+  /* The bar's own height token, never a copied pixel value. */
+  top: var(--cf-bar-h);
+  z-index: 40;
+  background: var(--cf-bg-raised);
+  border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+}
+
+.ek-nav__inner {
+  display: flex;
+  gap: 0.25rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  overflow-x: auto;
+}
+
+.ek-nav__link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  color: var(--cf-fg-dim);
+  text-decoration: none;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  /* The current page is marked by an underline AND a weight AND a colour change. Any one of the
+     three would do on its own; the point is that none of them is doing it alone. */
+  border-bottom: 2px solid transparent;
+}
+
+.ek-nav__link:hover {
+  color: var(--cf-fg);
+}
+
+.ek-nav__link.is-active {
+  color: var(--cf-fg);
+  font-weight: 650;
+  border-bottom-color: var(--cf-accent);
+}
+
+.ek-nav__link:focus-visible {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: -2px;
+}
+
+/* ----------------------------- the HUD ----------------------------- */
+
+.ek-hud {
+  position: sticky;
+  top: calc(var(--cf-bar-h) + 2.6rem);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background-color: var(--cf-bg-sunken);
+  /* The region keyart, dimmed to the point of texture. It is decoration and is set inline as a
+     background image rather than an <img>, because the region's NAME is right beside it in text. */
+  background-size: cover;
+  background-position: center 35%;
+  border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 0 100vmax rgb(18 16 15 / 88%);
+}
+
+[data-ek-roomy='true'] .ek-hud {
+  gap: 1.75rem;
+  padding: 1rem;
+}
+
+.ek-hud--quiet,
+.ek-hud--failed {
+  background-image: none;
+  box-shadow: none;
+}
+
+.ek-hud__note {
+  margin: 0;
+  color: var(--cf-fg-dim);
+  font-size: 0.85rem;
+}
+
+.ek-hud--failed .ek-hud__note {
+  color: var(--cf-fg);
+}
+
+.ek-hud__where {
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+}
+
+.ek-hud__warden {
+  font-weight: 650;
+}
+
+.ek-hud__region {
+  font-size: 0.8rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-hud__party {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: wrap;
+}
+
+.ek-hud__slot {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  background: var(--cf-bg-raised);
+  font-size: 0.75rem;
+}
+
+/* Fainted dims the card AND says the word. The dimming alone would be colour doing the work. */
+.ek-hud__slot.is-fainted {
+  opacity: 0.55;
+}
+
+.ek-hud__portrait {
+  grid-row: 1 / 3;
+  inline-size: 2.2rem;
+  block-size: 2.2rem;
+  border-radius: 6px;
+}
+
+.ek-hud__name {
+  font-weight: 600;
+}
+
+.ek-hud__level,
+.ek-hud__fainted {
+  color: var(--cf-fg-dim);
+}
+
+.ek-hud__hp {
+  display: block;
+  inline-size: 100%;
+  block-size: 0.3rem;
+  border-radius: 999px;
+  background: var(--cf-bg-sunken);
+  overflow: hidden;
+}
+
+.ek-hud__hpfill {
+  display: block;
+  block-size: 100%;
+  background: var(--cf-viz-good, #7fae5c);
+}
+
+.ek-hud__hpfill.is-low {
+  background: var(--cf-viz-warn, #f4a63c);
+}
+
+.ek-hud__hpfill.is-critical {
+  background: var(--cf-viz-crit, #d2543a);
+}
+
+.ek-hud__bond {
+  display: flex;
+  flex-direction: column;
+  margin-inline-start: auto;
+  font-size: 0.75rem;
+}
+
+.ek-hud__bondlabel {
+  color: var(--cf-fg-dim);
+}
+
+.ek-hud__bondband {
+  font-weight: 650;
+}
+
+.ek-reqid {
+  user-select: all;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--cf-bg-sunken);
+  font-family: var(--cf-font-mono, ui-monospace, monospace);
+}
+
+/* ----------------------------- degradation ----------------------------- */
+
+.ek-degraded {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  max-width: 76rem;
+  margin: 0.75rem auto 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--cf-viz-warn, #f4a63c);
+  border-radius: 8px;
+  background: var(--cf-bg-raised);
+  font-size: 0.875rem;
+}
+
+.ek-degraded p {
+  margin: 0;
+}
+
+.ek-degraded__icon {
+  color: var(--cf-viz-warn, #f4a63c);
+}
+
+/* ----------------------------- pages ----------------------------- */
+
+.ek-main {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.ek-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.ek-page__lede {
+  color: var(--cf-fg-dim);
+  max-width: 44rem;
+}
+
+.ek-note,
+.ek-asof {
+  color: var(--cf-fg-dim);
+  font-size: 0.85rem;
+  max-width: 44rem;
+}
+
+.ek-muted {
+  color: var(--cf-fg-dim);
+}
+
+.ek-empty {
+  padding: 2rem 1rem;
+  border: 1px dashed var(--cf-border, rgba(255, 255, 255, 0.14));
+  border-radius: 10px;
+  color: var(--cf-fg-dim);
+  text-align: center;
+}
+
+/* ----------------------------- type chips ----------------------------- */
+
+/*
+ * A type is an icon, a word and a tint — in that order of importance. `--ek-type-tint` reaches
+ * only the border and a low-alpha glow; the LABEL is always --cf-fg, whose contrast against the
+ * ash is fixed and measured. A chip whose icon fails to load is still a legible word.
+ */
+.ek-types {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.ek-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--ek-type-tint, var(--cf-border, rgba(255, 255, 255, 0.16)));
+  border-radius: 999px;
+  background: var(--cf-bg-raised);
+  font-size: 0.75rem;
+  color: var(--cf-fg);
+}
+
+.ek-type__icon {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+}
+
+.ek-type__label {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* ----------------------------- meters ----------------------------- */
+
+.ek-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-block: 0.5rem;
+}
+
+.ek-meter__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+}
+
+.ek-meter__label {
+  color: var(--cf-fg-dim);
+}
+
+.ek-meter__band {
+  font-weight: 650;
+}
+
+.ek-meter__band--unknown {
+  font-weight: 400;
+  font-style: italic;
+  color: var(--cf-fg-dim);
+}
+
+.ek-meter__value {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.ek-meter__track {
+  position: relative;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--cf-bg-sunken);
+  overflow: hidden;
+}
+
+.ek-meter__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--cf-accent);
+  transition: inline-size 240ms ease-out;
+}
+
+.ek-meter__tick {
+  position: absolute;
+  inset-block: 0;
+  inline-size: 1px;
+  background: var(--cf-bg);
+}
+
+.ek-meter__track--bipolar {
+  overflow: visible;
+}
+
+.ek-meter__track--bipolar .ek-meter__fill {
+  position: absolute;
+  inset-block: 0;
+  border-radius: 999px;
+}
+
+.ek-meter__fill--harmony {
+  background: var(--cf-viz-2, #2a9e93);
+}
+
+.ek-meter__fill--ferocity {
+  background: var(--cf-viz-1, #e8622c);
+}
+
+.ek-meter__midpoint {
+  position: absolute;
+  inset-block: -0.15rem;
+  inset-inline-start: 50%;
+  inline-size: 1px;
+  background: var(--cf-fg-dim);
+}
+
+.ek-meter__note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-glyph {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  opacity: 0.9;
+}
+
+.ek-change {
+  padding: 0.5rem 0.7rem;
+  border-inline-start: 3px solid var(--cf-viz-good, #7fae5c);
+  background: var(--cf-bg-raised);
+  border-radius: 0 8px 8px 0;
+  margin-block: 0.5rem;
+}
+
+.ek-change.is-down {
+  border-inline-start-color: var(--cf-viz-crit, #d2543a);
+}
+
+.ek-change__line,
+.ek-change__band {
+  margin: 0.15rem 0;
+  font-size: 0.9rem;
+}
+
+/* ----------------------------- health ----------------------------- */
+
+.ek-hp {
+  margin-block: 0.4rem;
+}
+
+.ek-hp__track {
+  block-size: 0.55rem;
+  border-radius: 999px;
+  background: var(--cf-bg-sunken);
+  overflow: hidden;
+}
+
+.ek-hp__fill {
+  display: block;
+  block-size: 100%;
+  background: var(--cf-viz-good, #7fae5c);
+}
+
+.ek-hp__fill.is-low {
+  background: var(--cf-viz-warn, #f4a63c);
+}
+
+.ek-hp__fill.is-critical {
+  background: var(--cf-viz-crit, #d2543a);
+}
+
+.ek-hp__text {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-status {
+  font-weight: 650;
+  color: var(--cf-fg);
+}
+
+/* ----------------------------- portraits ----------------------------- */
+
+.ek-portrait {
+  inline-size: 100%;
+  block-size: auto;
+  border-radius: 10px;
+  background: var(--cf-bg-sunken);
+}
+
+.ek-portrait--absent {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px dashed var(--cf-border, rgba(255, 255, 255, 0.18));
+  color: var(--cf-fg-dim);
+  font-size: 1.4rem;
+}
+
+.ek-portrait__note {
+  font-size: 0.65rem;
+  text-align: center;
+  padding-inline: 0.25rem;
+}
+
+/* ----------------------------- dex ----------------------------- */
+
+.ek-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-block: 1rem;
+}
+
+.ek-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ek-field__label {
+  font-size: 0.8rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-typefilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ek-typefilter__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.16));
+  border-radius: 999px;
+  background: var(--cf-bg-raised);
+  color: var(--cf-fg);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+/* Pressed is a border, a background AND aria-pressed. The tint is the least of the three. */
+.ek-typefilter__btn.is-on {
+  border-color: var(--ek-type-tint, var(--cf-accent));
+  background: var(--cf-bg-sunken);
+  font-weight: 650;
+}
+
+.ek-typefilter__btn:focus-visible {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: 2px;
+}
+
+.ek-dex {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ek-dex__card {
+  padding: 0.6rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--cf-bg-raised);
+}
+
+/* "Met" is stated in words in the card; the opacity is a second channel, never the only one. */
+.ek-dex__card:not(.is-met) .ek-portrait {
+  opacity: 0.45;
+}
+
+.ek-dex__num {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-dex__name {
+  margin: 0.1rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.ek-dex__cat,
+.ek-dex__met {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+}
+
+.ek-reconcile {
+  margin-block: 1rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  background: var(--cf-bg-raised);
+  font-size: 0.85rem;
+}
+
+.ek-reconcile summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ----------------------------- party ----------------------------- */
+
+.ek-party,
+.ek-box {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ek-party {
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+}
+
+.ek-party__card {
+  padding: 1rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  background: var(--cf-bg-raised);
+}
+
+.ek-party__head {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.ek-party__head h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.ek-party__species {
+  font-weight: 400;
+  color: var(--cf-fg-dim);
+  font-size: 0.85rem;
+}
+
+.ek-party__meta {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-party__art-row,
+.ek-party__evo {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+  font-size: 0.85rem;
+}
+
+.ek-party__art-row h3,
+.ek-party__evo h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+}
+
+.ek-party__gate {
+  margin: 0.3rem 0 0;
+  color: var(--cf-fg-dim);
+}
+
+.ek-party__art-row.is-unlocked .ek-party__gate {
+  color: var(--cf-fg);
+}
+
+.ek-box {
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+}
+
+.ek-box__item {
+  display: grid;
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.ek-box__item .ek-portrait {
+  grid-row: 1 / 4;
+  inline-size: 2.6rem;
+}
+
+/* ----------------------------- satchel + wardrobe ----------------------------- */
+
+.ek-satchel {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.ek-satchel__item {
+  display: grid;
+  grid-template-columns: 12rem 4rem 1fr;
+  gap: 0.5rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.07));
+  font-size: 0.875rem;
+}
+
+.ek-satchel__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--cf-fg-dim);
+}
+
+.ek-slot,
+.ek-pass {
+  margin-block: 1.25rem;
+  padding: 0.9rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--cf-bg-raised);
+}
+
+.ek-slot h2,
+.ek-pass h2 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.ek-slot__where {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-slot__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ek-slot__opt {
+  inline-size: 100%;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  text-align: start;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  background: var(--cf-bg-sunken);
+  color: var(--cf-fg);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Worn is a border, a weight AND the word "worn". */
+.ek-slot__opt.is-on {
+  border-color: var(--cf-accent);
+  font-weight: 650;
+}
+
+.ek-slot__opt:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ek-slot__opt:focus-visible {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: 2px;
+}
+
+.ek-slot__effect {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-slot__mark {
+  font-size: 0.72rem;
+  color: var(--cf-accent);
+}
+
+/* ----------------------------- settings + credits ----------------------------- */
+
+.ek-settings__group {
+  margin-block: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  background: var(--cf-bg-raised);
+}
+
+.ek-settings__group h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.ek-radio,
+.ek-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.ek-hosts {
+  display: grid;
+  grid-template-columns: 12rem 1fr;
+  gap: 0.35rem 1rem;
+  font-size: 0.85rem;
+}
+
+.ek-hosts dt {
+  color: var(--cf-fg-dim);
+}
+
+.ek-hosts dd {
+  margin: 0;
+}
+
+.ek-credits__wordmark {
+  max-inline-size: 22rem;
+  block-size: auto;
+}
+
+.ek-credits__meta {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: 0.3rem 1rem;
+  font-size: 0.85rem;
+}
+
+.ek-credits__meta dt {
+  color: var(--cf-fg-dim);
+}
+
+.ek-credits__meta dd {
+  margin: 0;
+}
+
+.ek-credits__sets {
+  font-size: 0.85rem;
+}
+
+/* ----------------------------- not found ----------------------------- */
+
+.ek-notfound__mark {
+  inline-size: 5rem;
+  block-size: auto;
+  opacity: 0.8;
+}
+
+.ek-notfound__path {
+  color: var(--cf-fg-dim);
+}
+
+.ek-notfound__routes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+/* ----------------------------- starting a game ----------------------------- */
+
+.ek-start {
+  position: relative;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.ek-start__hero {
+  inline-size: 100%;
+  block-size: auto;
+  border-radius: 12px;
+  /* The hero sits behind the panel on wide screens; on a phone it stacks above it, which is the
+     right call — a background image with text over it is the first thing to lose contrast when
+     the viewport narrows. */
+  object-fit: cover;
+  max-block-size: 18rem;
+}
+
+.ek-start__panel {
+  max-inline-size: 52rem;
+}
+
+.ek-start__lede {
+  color: var(--cf-fg-dim);
+  max-inline-size: 40rem;
+}
+
+.ek-start__starters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.85rem;
+  border: 0;
+  padding: 0;
+  margin-block: 1rem;
+}
+
+.ek-start__starters legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 650;
+}
+
+.ek-start__starter {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.14));
+  border-radius: 12px;
+  background: var(--cf-bg-raised);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.ek-start__starter.is-on {
+  border-color: var(--cf-accent);
+  box-shadow: 0 0 0 1px var(--cf-accent);
+}
+
+.ek-start__starter:focus-within {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: 2px;
+}
+
+.ek-start__name {
+  font-weight: 650;
+  font-size: 1rem;
+}
+
+.ek-start__lore {
+  color: var(--cf-fg-dim);
+}
+
+.ek-start__stats {
+  font-size: 0.75rem;
+  color: var(--cf-fg-dim);
+}
+
+/* ----------------------------- the battle view ----------------------------- */
+
+.ek-play {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 60rem) {
+  .ek-play {
+    grid-template-columns: minmax(0, 1.15fr) minmax(22rem, 0.85fr);
+    align-items: start;
+  }
+}
+
+.ek-play__stage {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--cf-bg-sunken);
+}
+
+.ek-play__keyart,
+.ek-play__canvas {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.ek-play__nogl {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: rgb(18 16 15 / 88%);
+  font-size: 0.8rem;
+}
+
+.ek-play__panel {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.ek-play__panel header h1 {
+  margin: 0;
+}
+
+.ek-play__enemy {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ek-play__enemy h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.ek-play__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ek-turns__list {
+  margin: 0.3rem 0;
+  padding-inline-start: 1.2rem;
+  font-size: 0.85rem;
+}
+
+.ek-turns__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.4rem;
+}
+
+.ek-turns__move {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  text-align: start;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.14));
+  border-radius: 8px;
+  background: var(--cf-bg-raised);
+  color: var(--cf-fg);
+  cursor: pointer;
+}
+
+.ek-turns__move:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ek-turns__move:focus-visible {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: 2px;
+}
+
+.ek-turns__movename {
+  font-weight: 620;
+  font-size: 0.9rem;
+}
+
+.ek-turns__movemeta {
+  font-size: 0.72rem;
+  color: var(--cf-fg-dim);
+}
+
+.ek-log {
+  padding: 0.8rem;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: var(--cf-bg-sunken);
+}
+
+.ek-log h2 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.ek-log ol {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.875rem;
+  max-block-size: 22rem;
+  overflow-y: auto;
+}
+
+.ek-aftermath {
+  padding: 0.9rem;
+  border: 1px solid var(--cf-accent);
+  border-radius: 10px;
+  background: var(--cf-bg-raised);
+}
+
+.ek-aftermath h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+/* ----------------------------- motion ----------------------------- *
+ * Two switches, and both must work.
+ *
+ * The media query covers a reader who set the preference in their operating system and never
+ * opened this app's settings — which is most of them, and the case an app that only honoured its
+ * own toggle would fail.
+ *
+ * The attribute covers the in-app setting, applied to <html> the moment it changes so the effect
+ * is immediate rather than after a reload. `shouldReduceMotion` in src/lib/prefs.ts decides which
+ * value it takes, and deliberately lets the OS win over an in-app "off".
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ek-meter__fill {
+    transition: none;
+  }
+}
+
+[data-ek-reduce-motion='true'] .ek-meter__fill {
+  transition: none;
+}
+
+[data-ek-reduce-motion='true'] .wt-spinner {
+  animation: none;
+}

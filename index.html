@@ -1,23 +1,46 @@
 <!doctype html>
 <!--
   data-cf-product picks the accent ramp and data-cf-substrate the ash ramp, both from
-  @cloudsforge/ui/tokens.css. They are on <html> and set STATICALLY here rather than by React,
-  because a page that paints before the attributes land flashes the default ember and then
-  changes colour. Instantiating this template means changing these two values and PRODUCT in
-  src/lib/hosts.ts, which the boot check keeps in agreement.
+  @cloudsforge/ui/tokens.css. They are on <html> and set STATICALLY rather than by React, because a
+  page that paints before the attributes land flashes the default ember and then changes colour.
+
+  `worlds`, because Emberkin is a Forge Worlds title and the registry has no `emberkin` key — see
+  the header of src/lib/hosts.ts. `warm`, because the brand ground is #12100f: an ashen dark, warm
+  and never blue, and the warm ramp is the one the generated art was painted against.
 -->
-<html lang="en-GB" data-cf-product="trade" data-cf-substrate="cool">
+<html lang="en-GB" data-cf-product="worlds" data-cf-substrate="warm">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="colour-scheme" content="dark light" />
+    <!--
+      A game client is played on a phone held sideways as often as on a desktop, and the battle
+      view is a fixed canvas. `viewport-fit=cover` puts it under the notch rather than beside it;
+      `interactive-widget` keeps the on-screen keyboard from resizing the canvas when the warden
+      name field is focused. Zoom is NOT disabled — a pinch-to-zoom lock is an accessibility
+      failure, and the estate's rules do not stop being rules because the page has a canvas on it.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="colour-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Emberkin: Resonance — bond with Kin, and let the bond change what they become."
+    />
     <!--
       The build that produced this bundle. Stamped by the Dockerfile, read by src/lib/obs.ts, and
       the reason an error report can be pinned to the deploy that introduced it. It is an identity
       rather than a configuration: it names the artefact, it does not tell it where it is running.
     -->
     <meta name="cf-release" content="dev" />
-    <title>Forge Trade</title>
+    <link rel="icon" type="image/png" href="/art/title/mark-1024x1024.png" />
+    <!--
+      The one preload. The title mark is the first thing painted on every cold start, and it is the
+      only image on the critical path — everything else (portraits, keyart) is fetched by the screen
+      that needs it. Preloading more would compete with the JavaScript for the same connection.
+    -->
+    <link rel="preload" as="image" href="/art/title/wordmark-1024x384.png" />
+    <title>Emberkin: Resonance</title>
   </head>
   <body>
     <div id="root"></div>
