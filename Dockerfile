@@ -12,7 +12,7 @@
 # The named context is the unpublished @cloudsforge/ui workspace, mirroring the `file:` specifier
 # in package.json. It disappears when the package is published; see "The one temporary thing" in
 # the README.
-#   docker build -t web-template --build-context uipkg=../ui .
+#   docker build -t emberkin-web --build-context uipkg=../ui .
 
 FROM node:22-alpine AS build
 WORKDIR /app
@@ -32,6 +32,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json vite.config.ts index.html ./
+# 65 MB: the 134 generated images and the 50 procedural glTF creature bakes with their PBR maps.
+# Vite copies `public/` into `dist/` verbatim, so these are served as themselves at /art/ and
+# /game/ rather than being hashed into the bundle — which is what makes them immutable-cacheable
+# and what lets a .glb reference its textures by the relative URI baked into it.
+COPY public ./public
 COPY src ./src
 
 # The release identity: the git sha, stamped into the meta tag src/lib/obs.ts reads, so an error

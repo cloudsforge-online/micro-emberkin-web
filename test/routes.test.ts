@@ -154,8 +154,37 @@ describe('nginx serves every route the router owns', () => {
     assert.match(directives, /location \/assets\/\s*\{[^}]*try_files \$uri =404/s)
   })
 
-  it('never caches index.html', () => {
+  it('never caches index.html — on EVERY location that serves it', () => {
+    // `location = /index.html` only matches that literal path. `location = /` and the enumerated
+    // route block serve the same file through `try_files` without re-entering it, so the header
+    // has to be repeated. The web template omits it from both, which leaves `/` — the
+    // most-requested address in the application — with no cache directive at all.
     assert.match(directives, /location = \/index\.html\s*\{[^}]*no-store/s)
+    assert.match(directives, /location = \/\s*\{[^}]*no-store/s)
+    assert.match(directives, /location ~ \^\/\([^)]+\)[^{]*\{[^}]*no-store/s)
+  })
+
+  it('REPEATS the security headers in every location that sets a header of its own', () => {
+    /**
+     * nginx's `add_header` inheritance is all-or-nothing per level: a location containing even one
+     * `add_header` discards every one from the enclosing block. So a location that adds a
+     * Cache-Control silently drops X-Content-Type-Options, X-Frame-Options and Referrer-Policy —
+     * the directive it added is visible in the diff and the three it removed are not.
+     *
+     * The web template has exactly this bug: it sets Cache-Control inside `location /assets/` and
+     * `location = /index.html`, and therefore serves every hashed asset in every application cut
+     * from it with no nosniff header. Measured against a running image, then fixed here.
+     */
+    const blocks = directives.match(/location[^{]*\{[^}]*\}/gs) ?? []
+    assert.ok(blocks.length >= 6, `found only ${blocks.length} location blocks`)
+    const withHeaders = blocks.filter((b) => b.includes('add_header'))
+    assert.ok(withHeaders.length >= 6, 'expected several locations to set headers')
+    for (const block of withHeaders) {
+      const name = /location[^{]*/.exec(block)?.[0]?.trim() ?? '?'
+      for (const header of ['X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy']) {
+        assert.ok(block.includes(header), `${name} sets a header and therefore drops ${header}`)
+      }
+    }
   })
 
   it('listens on 8080, because the image is nginx-unprivileged', () => {
