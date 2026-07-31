@@ -1,0 +1,328 @@
+# Continuous integration.
+#
+# ────────────────────────────────────────────────────────────────────────────────────────────────
+# THE `check` AND `image` JOBS BELOW ARE TEMPORARY, for the same reason they are temporary in
+# micro-hub-web and micro-site: @cloudsforge/ui is unpublished and this repository consumes it as
+# `link:../ui/packages/ui`. The org's reusable `web-ci.yml` does a single checkout and then
+# `pnpm install --frozen-lockfile`, which cannot resolve a sibling directory that is not there.
+#
+# The day the design system is published and the specifier becomes `^1.0.0`, everything from
+# `check:` to the end of `image:` is deleted and replaced by:
+#
+#     jobs:
+#       ci:
+#         uses: cloudsforge-online/micro-org/.github/workflows/web-ci.yml@main
+#         with:
+#           app: emberkin-web
+#           deep-link-path: /dex
+#           build-image: false
+#
+# ONE INPUT OF THE REUSABLE WORKFLOW WILL STILL NOT SUIT THIS REPOSITORY: its `image` job probes a
+# deep route and requires a 200 for ANY address. This app's nginx.conf enumerates its real routes
+# and answers 404 for everything else on purpose — an unknown address served as a success is
+# indexed by crawlers and called healthy by monitors. So `build-image: false` is passed and the
+# image is checked here, where the probe can assert the honest answer instead.
+#
+# `deep-link-path` is `/dex`: a REAL route (test/routes.test.ts fails if it is not), and an
+# UNPROTECTED one, because the probe carries no token.
+# ────────────────────────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: emberkin-web }
+
+      # Temporary, for the same reason as the Dockerfile's second build context: the design system
+      # is unpublished and resolves through `link:../ui/packages/ui`.
+      - uses: actions/checkout@v4
+        with:
+          repository: cloudsforge-online/micro-ui
+          path: ui
+          # micro-ui is private; without a contents:read token this checkout 404s and the job dies
+          # before install. Same wiring as every other frontend in the estate.
+          token: ${{ secrets.ESTATE_READ_TOKEN }}
+
+      # Pinned, because the checkout lives at emberkin-web/ and the action looks for the
+      # packageManager field in the workspace root, where there is no package.json.
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.9.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm, cache-dependency-path: emberkin-web/pnpm-lock.yaml }
+
+      # `link:` resolves to the sibling's own node_modules, so the design system must be installed
+      # before this repository is — without this, `tsc` cannot resolve ../ui's own imports (react,
+      # react/jsx-runtime) when it typechecks the linked sources.
+      - name: Install the sibling design system
+        run: pnpm --dir ui install --frozen-lockfile
+
+      - name: Install
+        working-directory: emberkin-web
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: emberkin-web
+        run: pnpm typecheck
+
+      - name: Test
+        working-directory: emberkin-web
+        run: pnpm test
+
+      - name: Build
+        working-directory: emberkin-web
+        run: pnpm build
+
+      # A frontend that builds to nothing is a blank page, not a build failure.
+      - name: The bundle exists
+        working-directory: emberkin-web
+        run: |
+          test -f dist/index.html || { echo "::error::dist/index.html is missing after a successful build"; exit 1; }
+          echo "ok: $(find dist -type f | wc -l | tr -d ' ') files in dist"
+
+      # It is a game client — performance is a feature — so the numbers are printed on every run
+      # rather than left to whoever thinks to look. `three` legitimately weighs 730 kB; what must
+      # never happen is it arriving in the ENTRY chunk, which the step below is what watches.
+      - name: Report the chunk sizes
+        working-directory: emberkin-web
+        run: |
+          echo '### Bundle' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          find dist/assets -name '*.js' -not -name '*.map' -printf '%10s  %f\n' 2>/dev/null \
+            | sort -rn >> "$GITHUB_STEP_SUMMARY" \
+            || ls -lS dist/assets/*.js >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: The renderer is not in the entry chunk
+        working-directory: emberkin-web
+        # The lazy boundary this repository is built around, asserted against the BUILD OUTPUT
+        # rather than only against the source. test/bundle.test.ts checks the imports; this checks
+        # that the bundler agreed. An entry chunk that had swallowed three would be several
+        # hundred kilobytes larger, and every menu would pay for it.
+        run: |
+          set -euo pipefail
+          entry=$(node -e "
+            const {readFileSync}=require('node:fs');
+            const html=readFileSync('dist/index.html','utf8');
+            const m=/src=\"(\/assets\/[^\"]+\.js)\"/.exec(html);
+            if(!m){console.error('no entry script in dist/index.html');process.exit(1)}
+            process.stdout.write('dist'+m[1]);
+          ")
+          size=$(wc -c < "$entry")
+          echo "entry chunk $entry is $size bytes"
+          if [ "$size" -gt 600000 ]; then
+            echo "::error::the entry chunk is ${size} bytes — the renderer has leaked out of its lazy chunk"
+            exit 1
+          fi
+          if grep -qE 'WebGLRenderer|THREE\.REVISION' "$entry"; then
+            echo "::error::the entry chunk contains Three.js"
+            exit 1
+          fi
+          echo "ok: the entry chunk carries no renderer"
+
+  rules:
+    name: Estate rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No build-time configuration
+        # The same rule as test/no-build-time-config.test.ts, checked again here so it fails even
+        # if somebody deletes the test along with the line it forbids. A `VITE_` variable is read
+        # at build time and frozen into the artefact, and an artefact with an environment frozen
+        # into it has to be rebuilt to be promoted — which means the thing that reaches production
+        # is not the thing that passed CI.
+        #
+        # Comments are stripped first, as everywhere else in this estate: src/pages/settings.tsx
+        # explains to a reader that there is no build-time constant here, and that sentence names
+        # the thing it denies. A guard that fails on its own rationale gets switched off.
+        run: |
+          set -uo pipefail
+          stripped=$(mktemp)
+          find src -name '*.ts' -o -name '*.tsx' -o -name '*.html' | while read -r f; do
+            node -e "
+              const s=require('node:fs').readFileSync(process.argv[1],'utf8');
+              process.stdout.write(s.replace(/<!--[\s\S]*?-->/g,'').replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,''));
+            " "$f" >> "$stripped"
+          done
+          node -e "
+            const s=require('node:fs').readFileSync('index.html','utf8');
+            process.stdout.write(s.replace(/<!--[\s\S]*?-->/g,''));
+          " >> "$stripped"
+          if grep -n -e 'import\.meta\.env' -e 'VITE_' "$stripped"; then
+            echo "::error::this bundle must read no build-time environment; hosts come from cloudsforgeHosts() at runtime"
+            exit 1
+          fi
+          echo "ok: no build-time environment"
+
+      - name: No .env file, of any kind
+        run: |
+          set -uo pipefail
+          if ls -A .env .env.* 2>/dev/null | grep -q .; then
+            echo "::error::an .env file exists in this repository"
+            exit 1
+          fi
+          echo "ok: no .env"
+
+      - name: No hard-coded CloudsForge hostname
+        # A literal hostname is a second, unversioned copy of the surface registry, and the copy is
+        # the one that will be wrong. Comments are stripped first: src/lib/hosts.ts explains at
+        # length why a hostname must not be named, and a naive grep fails the build on its own
+        # rationale — which is a mistake this estate has now made five times.
+        run: |
+          set -uo pipefail
+          stripped=$(mktemp)
+          find src -name '*.ts' -o -name '*.tsx' | while read -r f; do
+            node -e "
+              const s=require('node:fs').readFileSync(process.argv[1],'utf8');
+              process.stdout.write(s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,''));
+            " "$f" >> "$stripped"
+          done
+          if grep -n 'cloudsforge\.online' "$stripped"; then
+            echo "::error::resolve hosts through cloudsforgeHosts() rather than naming them"
+            exit 1
+          fi
+          echo "ok: no literal hostnames in src"
+
+      - name: The SPA fallback keeps its 404
+        # Comments are stripped first, for the same reason: nginx.conf's own header QUOTES the
+        # directive it forbids in order to explain why the routes are enumerated by hand.
+        run: |
+          set -uo pipefail
+          directives=$(grep -v '^[[:space:]]*#' nginx.conf)
+          if printf '%s\n' "$directives" | grep -nE 'try_files[[:space:]]+\$uri[[:space:]]+(\$uri/[[:space:]]+)?/index\.html'; then
+            echo "::error::unknown paths must 404; serve the shell through error_page 404 /index.html"
+            exit 1
+          fi
+          printf '%s\n' "$directives" | grep -q 'error_page 404 /index.html'
+          echo "ok: unknown paths answer 404"
+
+      - name: The auth callback is redeemed before the app renders
+        # The hand-off code has to leave the address bar before the exchange goes over the wire,
+        # and that only happens if bootstrapSession() runs before React mounts.
+        run: grep -q 'bootstrapSession' src/main.tsx
+
+      - name: The route table, the router and nginx agree
+        # Already asserted by test/routes.test.ts; repeated here so deleting the test does not
+        # silently delete the rule.
+        run: test -f test/routes.test.ts && grep -q 'nginx.conf' test/routes.test.ts
+
+      - name: A cosmetic never touches a stat
+        # 19 §1.2. The service enforces it by absence; a client can still lie about it. The test
+        # that would actually catch a regression compares the Kin rather than reading the copy, so
+        # this step exists to make sure that test is still there.
+        run: |
+          set -uo pipefail
+          grep -q 'withCosmeticApplied' test/cosmetics.test.ts \
+            || { echo "::error::the anti-pay-to-win test is gone"; exit 1; }
+          grep -q 'A COSMETIC NEVER CHANGES A STAT' test/cosmetics.test.ts \
+            || { echo "::error::the anti-pay-to-win test is gone"; exit 1; }
+          echo "ok"
+
+      - name: The client cannot resolve a battle
+        # Battles resolve server-side from a seed. The upstream client ran the whole engine in the
+        # browser; those files are deleted, and a reappearance is a product regression rather than
+        # a refactor. `rng` is the tell — nothing in a client that submits intent needs one.
+        run: |
+          set -uo pipefail
+          if [ -d src/game/engine ]; then
+            echo "::error::src/game/engine is back — the client must not resolve battles"
+            exit 1
+          fi
+          if grep -rn --include='*.ts' --include='*.tsx' -e 'class Rng' -e 'computeDamage' src; then
+            echo "::error::battle resolution has reappeared in the client"
+            exit 1
+          fi
+          echo "ok: the client submits intent and renders the result"
+
+      - name: The art catalogue matches the manifest
+        run: node tools/sync-art.mjs --check
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: emberkin-web }
+      - uses: actions/checkout@v4
+        with:
+          repository: cloudsforge-online/micro-ui
+          path: ui
+          token: ${{ secrets.ESTATE_READ_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: emberkin-web
+          build-contexts: uipkg=ui
+          build-args: RELEASE=${{ github.sha }}
+          push: false
+          load: true
+          tags: emberkin-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: The image serves the game, and 404s an address it does not own
+        run: |
+          set -euo pipefail
+          docker run -d --name ci-emberkin-web -p 127.0.0.1:8080:8080 emberkin-web:ci
+          for attempt in $(seq 1 20); do
+            code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/ || true)
+            [ "$code" = "200" ] && break
+            sleep 1
+          done
+          [ "${code:-}" = "200" ] || { echo "::error::the image returned ${code:-no answer} for /"; docker logs --tail 60 ci-emberkin-web; exit 1; }
+
+          # A route this app OWNS must survive a hard refresh. /dex is DEEP_LINK_PATH in
+          # src/lib/routes.ts, and test/routes.test.ts fails if the two ever disagree.
+          deep=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/dex || true)
+          [ "$deep" = "200" ] || { echo "::error::/dex returned $deep — an owned route must be served the shell"; exit 1; }
+
+          # A route it does NOT own must answer 404 while still serving the shell, so the reader
+          # gets a real page and the status line tells the truth.
+          unknown=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nope/not/a/route || true)
+          [ "$unknown" = "404" ] || { echo "::error::an unknown address returned $unknown; it must be 404"; exit 1; }
+          curl -s -m 5 http://127.0.0.1:8080/nope/not/a/route | grep -q '<div id="root">' \
+            || { echo "::error::the 404 did not serve the app shell"; exit 1; }
+
+          # The art and the models are in the image and are served as themselves. A .glb answered
+          # with the app shell parses as garbage inside GLTFLoader and names neither file.
+          art=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/art/species/cindercub-256x256.png || true)
+          [ "$art" = "200" ] || { echo "::error::a species portrait returned $art"; exit 1; }
+          model=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/game/models/creatures/cindercub.glb || true)
+          [ "$model" = "200" ] || { echo "::error::a creature model returned $model"; exit 1; }
+          # The glb references its PBR maps by RELATIVE URI, two levels up. If that layout broke,
+          # every creature would render untextured and nothing would error.
+          tex=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/game/textures/creatures/fur_albedo.png || true)
+          [ "$tex" = "200" ] || { echo "::error::a creature texture returned $tex — the glb relative URIs are broken"; exit 1; }
+          missing=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/art/species/not-a-species.png || true)
+          [ "$missing" = "404" ] || { echo "::error::a missing asset returned $missing; it must 404 rather than get the shell"; exit 1; }
+
+          echo "ok: owned routes are served, assets are assets, unknown addresses 404 with the shell"
+      - name: Down
+        if: always()
+        run: docker rm -f ci-emberkin-web || true
+
+  hygiene:
+    # The org's reusable secret check. Cheap, and it catches the failure that cannot be undone: a
+    # secret pushed to a repository is compromised the moment it lands, and rotating it is the only
+    # remedy.
+    uses: cloudsforge-online/micro-org/.github/workflows/secret-hygiene.yml@main
+    permissions:
+      contents: read

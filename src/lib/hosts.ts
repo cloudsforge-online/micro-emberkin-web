@@ -20,10 +20,33 @@
  * does not yet carry: the subdomain `emberkin` and the dev port 4100, which is
  * `emberkin/src/env.ts:121` (`integer(source, 'PORT', 4100, …)`).
  *
- * WHEN THE REGISTRY GAINS AN `emberkin` ENTRY, this file loses `deriveSurfaceUrl`,
- * `EMBERKIN_SUBDOMAIN`, `EMBERKIN_DEV_PORT` and their test, `PRODUCT` becomes `'emberkin'`, and
- * `apiBase()` becomes the one-line resolution every other frontend has. Nothing else moves. That
- * deletion is the point of keeping the workaround this small.
+ * ────────────────────────────────────────────────────────────────────────────────────────────────
+ * AND THE PART THAT IS A REAL DEFECT, NOT AN INCONVENIENCE.
+ *
+ * `cloudsforgeHosts()` derives the apex by stripping a KNOWN subdomain from the browser's
+ * hostname, and `KNOWN_SUBS` is built from the registry's own subdomains
+ * (`ui/packages/ui/src/surfaces.ts:521-525`). `emberkin` is not one, so an unknown prefix is left
+ * alone by design (`ui/packages/ui/src/index.tsx:149-158`) — which is correct for a preview
+ * deployment and wrong for this app in production. Served from `https://emberkin.<apex>`, the
+ * registry resolves:
+ *
+ *     nimbus  → https://nimbus.emberkin.<apex>     ← does not exist
+ *     pay     → https://pay.emberkin.<apex>        ← does not exist
+ *     lantern → https://lantern.emberkin.<apex>    ← does not exist
+ *
+ * Sign-in, billing and telemetry would every one of them address a hostname that is not there.
+ * Measured, not reasoned about: `test/hosts.test.ts` drives `cloudsforgeHosts()` from that
+ * hostname and asserts the wrong answer, so the defect cannot be quietly "fixed" by assumption.
+ *
+ * `hosts()` therefore CORRECTS the registry's answer rather than passing it through: when the page
+ * is served from `emberkin.<something>`, the stray label is removed from every resolved URL. It is
+ * a mechanical rewrite of a string the registry produced, confined to this file, and it is a
+ * no-op in every other environment — localhost, an apex, a preview deployment.
+ *
+ * WHEN THE REGISTRY GAINS AN `emberkin` ENTRY this whole block goes: `deriveSurfaceUrl`,
+ * `stripOwnLabel`, `EMBERKIN_SUBDOMAIN`, `EMBERKIN_DEV_PORT`, their tests, and `PRODUCT` becomes
+ * `'emberkin'`. Nothing else moves. That deletion is the point of keeping the workaround this
+ * small and this loud.
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  */
 import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloudsforge/ui'
@@ -85,9 +108,42 @@ export function deriveSurfaceUrl(
   return `${url.protocol}//${subdomain}.${apex}`
 }
 
-/** Every CloudsForge base URL the registry knows, for the current environment. */
+/**
+ * Remove a stray leading label from a resolved URL.
+ *
+ * `https://nimbus.emberkin.example.com` → `https://nimbus.example.com`, and everything else is
+ * returned untouched. Exported so the test can drive it directly rather than only through the
+ * environment that produces it.
+ */
+export function stripOwnLabel(url: string, label: string): string {
+  try {
+    const parsed = new URL(url)
+    const parts = parsed.hostname.split('.')
+    // The label sits SECOND — after the surface's own subdomain — because the registry appended
+    // that subdomain to what it wrongly believed was the apex. A label anywhere else is not this
+    // bug and is left alone.
+    if (parts[1] !== label || parts.length < 3) return url
+    parsed.hostname = [parts[0], ...parts.slice(2)].join('.')
+    return parsed.toString().replace(/\/$/, '')
+  } catch {
+    // A URL that will not parse is not one this function can improve.
+    return url
+  }
+}
+
+/**
+ * Every CloudsForge base URL the registry knows, for the current environment — corrected.
+ *
+ * See the header. The correction fires only when the page is served from `emberkin.<something>`,
+ * which is the one case the registry cannot resolve because it has no entry for this surface.
+ */
 export function hosts(): CloudsForgeHosts {
-  return cloudsforgeHosts()
+  const resolved = cloudsforgeHosts()
+  const hostname = typeof window === 'undefined' ? '' : window.location.hostname
+  if (isLocal(hostname) || hostname.split('.')[0] !== EMBERKIN_SUBDOMAIN) return resolved
+  return Object.fromEntries(
+    Object.entries(resolved).map(([key, url]) => [key, stripOwnLabel(url, EMBERKIN_SUBDOMAIN)]),
+  ) as CloudsForgeHosts
 }
 
 /**

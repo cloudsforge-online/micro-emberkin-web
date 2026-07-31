@@ -9,6 +9,21 @@
  * Every host is resolved at runtime from `window.location.hostname` instead. This test is a grep,
  * because the failure mode is somebody adding one line in a hurry, and a grep is the only check
  * that catches that on the pull request rather than in an incident.
+ *
+ * ────────────────────────────────────────────────────────────────────────────────────────────────
+ * TWO CHANGES FROM THE TEMPLATE'S COPY, both for the same reason.
+ *
+ * COMMENTS ARE STRIPPED FIRST. The template's version greps raw text, and this repository's
+ * settings page explains — in prose, to a reader — that there is no build-time constant here. That
+ * sentence names the thing it is denying, and the template's test therefore fails on the file that
+ * documents the rule. It is the same shape as nginx.conf quoting the directive it forbids, and the
+ * estate has now hit it five times. A guard that fails on its own rationale gets deleted, and then
+ * the rule is gone. The rule is about CODE.
+ *
+ * The per-file cases are collapsed into one. Thirty-five near-identical `it`s inflate a suite's
+ * count without checking thirty-five independent things; the aggregate NAMES every offender, which
+ * is the only part a failure needs.
+ * ────────────────────────────────────────────────────────────────────────────────────────────────
  */
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
@@ -46,14 +61,30 @@ describe('no build-time configuration', () => {
     assert.ok(files.length >= 10, `expected the source tree, found ${files.length} files`)
   })
 
-  for (const file of files) {
-    const name = relative(root, file)
-    it(`${name} reads no build-time environment`, () => {
-      const text = readFileSync(file, 'utf8')
-      assert.equal(text.includes(ENV_PREFIX), false, `${name} references a ${ENV_PREFIX} variable`)
-      assert.equal(text.includes(ENV_OBJECT), false, `${name} reads ${ENV_OBJECT}`)
-    })
-  }
+  /** Source with its comments removed — line, block and HTML. See the header. */
+  const code = (file: string): string =>
+    readFileSync(file, 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+
+  it('no file references a build-time environment variable', () => {
+    const offenders = files.filter((f) => code(f).includes(ENV_PREFIX)).map((f) => relative(root, f))
+    assert.deepEqual(offenders, [], `these reference a ${ENV_PREFIX} variable: ${offenders.join(', ')}`)
+  })
+
+  it('no file reads the build-time env object', () => {
+    const offenders = files.filter((f) => code(f).includes(ENV_OBJECT)).map((f) => relative(root, f))
+    assert.deepEqual(offenders, [], `these read ${ENV_OBJECT}: ${offenders.join(', ')}`)
+  })
+
+  it('is stripping comments, not stripping everything', () => {
+    // Without this, a `code()` that returned '' would make both assertions above pass for the
+    // worst possible reason.
+    const settings = code(join(root, 'src/pages/settings.tsx'))
+    assert.ok(settings.includes('SettingsPage'), 'comment stripping ate the code')
+    assert.ok(!settings.includes('There is deliberately'), 'comment stripping left prose behind')
+  })
 
   it('the Vite config defines no constants and reads no env prefix', () => {
     // The other half of the same hole: `define` and `envPrefix` bake values into the bundle

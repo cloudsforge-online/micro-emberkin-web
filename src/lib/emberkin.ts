@@ -285,8 +285,12 @@ export function equipCosmetic(slot: string, itemUrn: string | null): Promise<{ e
  * (`order by unlocked_at desc`, line 413) and is not re-sorted here.
  */
 export async function fetchAchievements(): Promise<readonly AchievementRow[]> {
-  const body = await emberkin<{ achievements: AchievementRow[] }>('/v1/saves/me/achievements')
-  return body.achievements
+  const body = await emberkin<{ achievements?: AchievementRow[] }>('/v1/saves/me/achievements')
+  // `?? []` rather than trusting the key. The shared request client returns `undefined` for a 204
+  // and for a non-JSON 200 (`api.ts`: content-length 0, or a content-type that is not JSON), and a
+  // proxy in front of the service can produce either. Without this, every caller's `.map` throws
+  // on a response that was merely empty.
+  return body?.achievements ?? []
 }
 
 /**
@@ -302,8 +306,9 @@ export async function fetchAchievements(): Promise<readonly AchievementRow[]> {
  * Public and unauthenticated: the handler takes no principal (line 431 destructures `_ctx`).
  */
 export async function fetchDex(): Promise<readonly DexEntry[]> {
-  const body = await emberkin<{ dex: DexEntry[] }>('/v1/content/dex', { auth: false })
-  return body.dex
+  const body = await emberkin<{ dex?: DexEntry[] }>('/v1/content/dex', { auth: false })
+  // See `fetchAchievements`: an empty or non-JSON 200 must not become a TypeError three layers up.
+  return body?.dex ?? []
 }
 
 /**
