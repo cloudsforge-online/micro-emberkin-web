@@ -76,8 +76,6 @@ export const EMBERKIN_DEV_PORT = 4100
  * `basePath`, so stripping its first label yields the apex without further care.
  * `ui/packages/ui/src/surfaces.ts:457-468`.
  */
-const ANCHOR: SurfaceKey = 'worlds-api'
-const ANCHOR_SUBDOMAIN = 'worlds-api'
 
 function isLocal(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')
@@ -138,12 +136,12 @@ export function stripOwnLabel(url: string, label: string): string {
  * which is the one case the registry cannot resolve because it has no entry for this surface.
  */
 export function hosts(): CloudsForgeHosts {
-  const resolved = cloudsforgeHosts()
-  const hostname = typeof window === 'undefined' ? '' : window.location.hostname
-  if (isLocal(hostname) || hostname.split('.')[0] !== EMBERKIN_SUBDOMAIN) return resolved
-  return Object.fromEntries(
-    Object.entries(resolved).map(([key, url]) => [key, stripOwnLabel(url, EMBERKIN_SUBDOMAIN)]),
-  ) as CloudsForgeHosts
+  // Passed through, untouched. This used to strip `emberkin.` from every resolved URL, because
+  // the registry had no `emberkin` surface and so could not recognise it as a known subdomain —
+  // served from `emberkin.<apex>` it resolved identity, billing and telemetry to
+  // `nimbus.emberkin.<apex>` and friends, three hostnames that do not exist. The registry now
+  // carries the surface, KNOWN_SUBS contains it, and the correction is gone.
+  return cloudsforgeHosts()
 }
 
 /**
@@ -158,7 +156,9 @@ export function hosts(): CloudsForgeHosts {
  * cross-origin. Pretending otherwise would send every call to the static file server.
  */
 export function apiBase(): string {
-  return deriveSurfaceUrl(hosts()[ANCHOR], ANCHOR_SUBDOMAIN, EMBERKIN_SUBDOMAIN, EMBERKIN_DEV_PORT)
+  // Straight from the registry now that `emberkin` is a surface in it. This used to derive the URL
+  // from `worlds-api` by swapping labels and forcing a port, because there was nothing to read.
+  return new URL(hosts().emberkin).origin
 }
 
 /**

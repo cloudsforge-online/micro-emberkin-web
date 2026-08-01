@@ -15,80 +15,17 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { installWindow, removeWindow } from './browser-stubs.ts'
-import { cloudsforgeHosts } from '@cloudsforge/ui'
+import { SURFACES } from '@cloudsforge/ui/surfaces'
 import {
   apiBase,
   billingBase,
-  deriveSurfaceUrl,
-  EMBERKIN_DEV_PORT,
-  EMBERKIN_SUBDOMAIN,
   hosts,
   pageOrigin,
   PRODUCT,
-  stripOwnLabel,
 } from '../src/lib/hosts.ts'
 
 afterEach(() => {
   removeWindow()
-})
-
-describe('deriveSurfaceUrl', () => {
-  it('uses the dev port on localhost', () => {
-    assert.equal(
-      deriveSurfaceUrl('http://localhost:4002', 'worlds-api', 'emberkin', 4100),
-      'http://localhost:4100',
-    )
-  })
-
-  it('uses the dev port on 127.0.0.1', () => {
-    assert.equal(
-      deriveSurfaceUrl('http://127.0.0.1:4002', 'worlds-api', 'emberkin', 4100),
-      'http://127.0.0.1:4100',
-    )
-  })
-
-  it('uses the dev port on a .local hostname', () => {
-    assert.equal(
-      deriveSurfaceUrl('http://mac.local:4002', 'worlds-api', 'emberkin', 4100),
-      'http://mac.local:4100',
-    )
-  })
-
-  it('swaps the subdomain on an apex', () => {
-    assert.equal(
-      deriveSurfaceUrl('https://worlds-api.example.com', 'worlds-api', 'emberkin', 4100),
-      'https://emberkin.example.com',
-    )
-  })
-
-  it('keeps the whole hostname as the apex on a preview deployment', () => {
-    // `cloudsforgeHosts()` leaves an unknown prefix alone, so the anchor arrives with the preview
-    // host already in it. Guessing at a shorter apex here would point at nothing.
-    assert.equal(
-      deriveSurfaceUrl('https://worlds-api.pr-42.example.dev', 'worlds-api', 'emberkin', 4100),
-      'https://emberkin.pr-42.example.dev',
-    )
-  })
-
-  it('prepends rather than replacing when the anchor somehow carries no subdomain', () => {
-    assert.equal(
-      deriveSurfaceUrl('https://example.com', 'worlds-api', 'emberkin', 4100),
-      'https://emberkin.example.com',
-    )
-  })
-
-  it('keeps the protocol — http stays http, https stays https', () => {
-    assert.equal(
-      deriveSurfaceUrl('http://worlds-api.example.com', 'worlds-api', 'emberkin', 4100),
-      'http://emberkin.example.com',
-    )
-  })
-
-  it('never returns a trailing slash, which would double up against a leading-slash path', () => {
-    for (const anchor of ['http://localhost:4002', 'https://worlds-api.example.com']) {
-      assert.ok(!deriveSurfaceUrl(anchor, 'worlds-api', 'emberkin', 4100).endsWith('/'))
-    }
-  })
 })
 
 describe('apiBase', () => {
@@ -100,7 +37,7 @@ describe('apiBase', () => {
     // The template's `resolveApiBase` collapses to '' when the origins match, because most SPAs
     // share an origin with their API behind the gateway. Emberkin's client and service are
     // separate surfaces even in production, so a relative URL would hit the static file server.
-    assert.equal(apiBase(), `http://localhost:${EMBERKIN_DEV_PORT}`)
+    assert.equal(apiBase(), 'http://localhost:4100')
   })
 
   it('is never the empty string', () => {
@@ -110,7 +47,7 @@ describe('apiBase', () => {
   it('uses the subdomain in production', () => {
     removeWindow()
     installWindow('https://emberkin.example.com/dex')
-    assert.equal(apiBase(), `https://${EMBERKIN_SUBDOMAIN}.example.com`)
+    assert.equal(apiBase(), 'https://emberkin.example.com')
   })
 
   it('resolves the same host when the page is served from another estate surface', () => {
@@ -126,8 +63,11 @@ describe('apiBase', () => {
     assert.equal(apiBase(), 'https://emberkin.example.com')
   })
 
-  it('names the dev port emberkin/src/env.ts:121 defaults to', () => {
-    assert.equal(EMBERKIN_DEV_PORT, 4100)
+  it('uses the port the registry records, which is the port the service binds', () => {
+    // 4100 — `emberkin/src/env.ts:121`. The constant that used to hold this lived here because the
+    // registry had no emberkin surface; it does now, so the fact has one home instead of two.
+    const emberkin = SURFACES.find((x) => x.key === 'emberkin')
+    assert.equal(emberkin?.devPort, 4100)
   })
 })
 
@@ -143,141 +83,6 @@ describe('billingBase', () => {
   })
 })
 
-describe('THE REGISTRY CANNOT RESOLVE THE APEX FROM THIS APP\u2019S OWN HOSTNAME', () => {
-  /**
-   * The defect, measured rather than argued about.
-   *
-   * `KNOWN_SUBS` is built from the registry's own subdomains
-   * (`ui/packages/ui/src/surfaces.ts:521-525`) and `emberkin` is not one, so
-   * `cloudsforgeHosts()` leaves the prefix alone and treats the WHOLE hostname as the apex. That
-   * is correct behaviour for a preview deployment and wrong for this app in production.
-   *
-   * These first assertions pin the WRONG answer on purpose. If micro-ui ever gains an `emberkin`
-   * entry, they fail — which is exactly the signal to delete the correction below along with
-   * them, rather than leaving a rewrite running against a registry that no longer needs it.
-   */
-  beforeEach(() => {
-    installWindow('https://emberkin.example.com/dex')
-  })
-
-  it('resolves nimbus to a hostname that does not exist', () => {
-    assert.equal(cloudsforgeHosts().nimbus, 'https://nimbus.emberkin.example.com')
-  })
-
-  it('resolves billing to a hostname that does not exist', () => {
-    assert.equal(cloudsforgeHosts().pay, 'https://pay.emberkin.example.com')
-  })
-
-  it('resolves the telemetry ingest to a hostname that does not exist', () => {
-    assert.equal(cloudsforgeHosts().lantern, 'https://lantern.emberkin.example.com')
-  })
-
-  it('hosts() CORRECTS every one of them', () => {
-    const h = hosts()
-    assert.equal(h.nimbus, 'https://nimbus.example.com')
-    assert.equal(h.pay, 'https://pay.example.com')
-    assert.equal(h.lantern, 'https://lantern.example.com')
-    assert.equal(h.account, 'https://account.example.com')
-  })
-
-  it('corrects every key, not just the four the app happens to name', () => {
-    for (const [key, url] of Object.entries(hosts())) {
-      assert.ok(!url.includes('.emberkin.'), `${key} still carries the stray label: ${url}`)
-    }
-  })
-
-  it('leaves a surface with a basePath usable — the path survives the rewrite', () => {
-    // The wallet is a path inside Hub (`surfaces.ts` `basePath`). A naive `new URL().toString()`
-    // round trip must not drop it.
-    const wallet = hosts().wallet
-    assert.ok(wallet.startsWith('https://'), wallet)
-    assert.ok(!wallet.includes('.emberkin.'), wallet)
-  })
-})
-
-describe('hosts() is a no-op everywhere else', () => {
-  it('changes nothing on localhost', () => {
-    installWindow('http://localhost:5195/')
-    assert.deepEqual(hosts(), cloudsforgeHosts())
-  })
-
-  it('changes nothing when served from the apex', () => {
-    installWindow('https://example.com/')
-    assert.deepEqual(hosts(), cloudsforgeHosts())
-  })
-
-  it('changes nothing when served from another estate surface', () => {
-    installWindow('https://worlds.example.com/')
-    assert.deepEqual(hosts(), cloudsforgeHosts())
-  })
-
-  it('changes nothing on a preview deployment', () => {
-    installWindow('https://pr-42.example.dev/')
-    assert.deepEqual(hosts(), cloudsforgeHosts())
-  })
-})
-
-describe('stripOwnLabel', () => {
-  it('removes the label when it sits second', () => {
-    assert.equal(stripOwnLabel('https://nimbus.emberkin.example.com', 'emberkin'), 'https://nimbus.example.com')
-  })
-
-  it('leaves the label alone when it sits FIRST — that is this app\u2019s own host', () => {
-    assert.equal(stripOwnLabel('https://emberkin.example.com', 'emberkin'), 'https://emberkin.example.com')
-  })
-
-  it('leaves a URL that does not carry the label at all', () => {
-    assert.equal(stripOwnLabel('https://nimbus.example.com', 'emberkin'), 'https://nimbus.example.com')
-  })
-
-  it('keeps a path', () => {
-    assert.equal(stripOwnLabel('https://hub.emberkin.example.com/wallet', 'emberkin'), 'https://hub.example.com/wallet')
-  })
-
-  it('keeps a port', () => {
-    assert.equal(stripOwnLabel('https://a.emberkin.example.com:8443', 'emberkin'), 'https://a.example.com:8443')
-  })
-
-  it('returns an unparseable string unchanged rather than throwing', () => {
-    assert.equal(stripOwnLabel('not a url', 'emberkin'), 'not a url')
-  })
-
-  it('refuses to strip when doing so would leave no apex', () => {
-    assert.equal(stripOwnLabel('https://a.emberkin', 'emberkin'), 'https://a.emberkin')
-  })
-})
-
-describe('the registry entries this app relies on', () => {
-  beforeEach(() => {
-    installWindow('http://localhost:5195/')
-  })
-
-  it('presents itself as `worlds`, because there is no `emberkin` key yet', () => {
-    assert.equal(PRODUCT, 'worlds')
-  })
-
-  it('still has the anchor surface it derives from', () => {
-    // If `worlds-api` were ever removed from the registry, `apiBase()` would resolve to
-    // `undefined` and every request would go to the string "undefined". This is what catches that.
-    assert.ok(hosts()['worlds-api'], 'the worlds-api anchor is gone from the registry')
-  })
-
-  it('still has the billing surface', () => {
-    assert.ok(hosts().pay)
-  })
-
-  it('has the surfaces the shared auth client needs', () => {
-    assert.ok(hosts().nimbus)
-    assert.ok(hosts().lantern)
-    assert.ok(hosts().account)
-  })
-
-  it('genuinely has NO emberkin key — the premise of the workaround, asserted', () => {
-    // When this fails, delete deriveSurfaceUrl, set PRODUCT to 'emberkin', and delete this test.
-    assert.equal((hosts() as Record<string, string>)['emberkin'], undefined)
-  })
-})
-
 describe('pageOrigin', () => {
   it('is the window origin when there is one', () => {
     installWindow('https://emberkin.example.com/dex')
@@ -286,5 +91,50 @@ describe('pageOrigin', () => {
 
   it('is a stable placeholder when there is no document', () => {
     assert.equal(pageOrigin(), 'http://localhost')
+  })
+})
+
+describe('the registry resolves this app without correction', () => {
+  // These replace five blocks that asserted the registry was BROKEN — pinned deliberately to the
+  // wrong answers so they would go red the day it was fixed. It has been: `micro-ui` now carries an
+  // `emberkin` surface, so KNOWN_SUBS contains the subdomain, the apex derives correctly, and the
+  // label-stripping workaround this file used to exercise is gone.
+  it('strips this app\u2019s own subdomain when deriving the apex', () => {
+    installWindow('https://emberkin.cloudsforge.online/dex')
+    const h = hosts()
+    for (const [name, url] of Object.entries(h)) {
+      assert.doesNotMatch(
+        String(url),
+        /\.emberkin\./,
+        `${name} resolved through this app\u2019s own label: ${String(url)}`,
+      )
+    }
+  })
+
+  it('resolves the API from the registry rather than deriving it', () => {
+    installWindow('https://emberkin.cloudsforge.online/dex')
+    assert.equal(apiBase(), 'https://emberkin.cloudsforge.online')
+  })
+
+  it('carries the port the service actually binds', () => {
+    // 4100 — `emberkin/src/env.ts:121`. It was briefly registered as 3014, a free-looking number
+    // chosen without reading the service, which is the same mistake that gave foresight beacon\u2019s
+    // port. A devPort is a fact about a service, not an allocation.
+    const emberkin = SURFACES.find((x) => x.key === 'emberkin')
+    assert.ok(emberkin, 'the registry must carry an emberkin surface')
+    assert.equal(emberkin.devPort, 4100)
+    assert.equal(emberkin.subdomain, 'emberkin')
+  })
+})
+
+describe('the switcher marks the product this title belongs to', () => {
+  it('is worlds, not emberkin', () => {
+    // Emberkin is a Forge Worlds TITLE (19 §1.3), and the registry now carries an `emberkin`
+    // surface — but as a service with `inSwitcher: false`, because a title is not a sixth product.
+    // A player opening the switcher from inside the game should see the platform they are playing
+    // on marked current, which is `worlds`.
+    assert.equal(PRODUCT, 'worlds')
+    const emberkin = SURFACES.find((x) => x.key === 'emberkin')
+    assert.equal(emberkin?.inSwitcher, false, 'a title must not appear as a product')
   })
 })

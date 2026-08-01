@@ -40,7 +40,19 @@
       that needs it. Preloading more would compete with the JavaScript for the same connection.
     -->
     <link rel="preload" as="image" href="/art/title/wordmark-1024x384.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/favicon-192x192.png" />
+
     <title>Emberkin: Resonance</title>
+  
+    <!-- Relative on purpose: one bundle serves localhost, preview and the apex, and this file
+         names no hostname. Crawlers resolve it against the page they fetched. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Emberkin: Resonance" />
+    <meta property="og:description" content="Collect Kin, form bonds, and mend a shattered world. A Forge Worlds title." />
+    <meta property="og:image" content="/og-1200x630.png" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
