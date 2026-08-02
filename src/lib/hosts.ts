@@ -43,10 +43,16 @@
  * a mechanical rewrite of a string the registry produced, confined to this file, and it is a
  * no-op in every other environment — localhost, an apex, a preview deployment.
  *
- * WHEN THE REGISTRY GAINS AN `emberkin` ENTRY this whole block goes: `deriveSurfaceUrl`,
- * `stripOwnLabel`, `EMBERKIN_SUBDOMAIN`, `EMBERKIN_DEV_PORT`, their tests, and `PRODUCT` becomes
- * `'emberkin'`. Nothing else moves. That deletion is the point of keeping the workaround this
- * small and this loud.
+ * THE REGISTRY GAINED ITS `emberkin` ENTRY (`ui/packages/ui/src/surfaces.ts:404`) and the block
+ * this header promised to delete — `deriveSurfaceUrl`, `stripOwnLabel`, `EMBERKIN_SUBDOMAIN`,
+ * `EMBERKIN_DEV_PORT` — is gone, in full. The rewire happened in two halves months apart, which
+ * is exactly what a promised-deletion comment exists to prevent, and only half-happened anyway:
+ * `hosts()` was repointed but all four exports survived, still imported by the settings screen.
+ *
+ * One clause of the promise is deliberately NOT honoured: `PRODUCT` stays `'worlds'`. The comment
+ * beside it argues the truer position — a title highlights the platform it runs on — and the
+ * registry's `emberkin` entry is `inSwitcher: false`, so marking `'emberkin'` current would
+ * highlight nothing at all.
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  */
 import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloudsforge/ui'
@@ -63,71 +69,6 @@ export const PRODUCT: SurfaceKey = 'worlds'
 /** The name reported to the observability ingest and shown in error copy. */
 export const APP_NAME = 'emberkin-web'
 
-/** Emberkin's own subdomain, pending a registry entry. See the header. */
-export const EMBERKIN_SUBDOMAIN = 'emberkin'
-
-/** Emberkin's dev port. `emberkin/src/env.ts:121` — `integer(source, 'PORT', 4100, 1, 65_535)`. */
-export const EMBERKIN_DEV_PORT = 4100
-
-/**
- * The anchor surface whose resolved URL tells us which environment we are in.
- *
- * `worlds-api` rather than `worlds`: it is a `service` kind with a plain subdomain and no
- * `basePath`, so stripping its first label yields the apex without further care.
- * `ui/packages/ui/src/surfaces.ts:457-468`.
- */
-
-function isLocal(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')
-}
-
-/**
- * Resolve a surface the registry does not carry, from one it does.
- *
- * Pure and exported so a test can drive it with every environment the registry produces — a
- * localhost port, an apex subdomain, and a preview deployment whose hostname is its own apex. The
- * last is the case worth pinning: `cloudsforgeHosts()` deliberately leaves an unknown prefix alone
- * (`ui/packages/ui/src/index.tsx:149-158`), so on `pr-42.example.dev` the anchor comes back as
- * `https://worlds-api.pr-42.example.dev` and this must produce `https://emberkin.pr-42.example.dev`
- * rather than guessing at a shorter apex.
- */
-export function deriveSurfaceUrl(
-  anchorUrl: string,
-  anchorSubdomain: string,
-  subdomain: string,
-  devPort: number,
-): string {
-  const url = new URL(anchorUrl)
-  if (isLocal(url.hostname)) return `${url.protocol}//${url.hostname}:${devPort}`
-  const prefix = `${anchorSubdomain}.`
-  // The anchor always carries its own subdomain in production. If it somehow does not, the
-  // hostname IS the apex and prepending is still correct.
-  const apex = url.hostname.startsWith(prefix) ? url.hostname.slice(prefix.length) : url.hostname
-  return `${url.protocol}//${subdomain}.${apex}`
-}
-
-/**
- * Remove a stray leading label from a resolved URL.
- *
- * `https://nimbus.emberkin.example.com` → `https://nimbus.example.com`, and everything else is
- * returned untouched. Exported so the test can drive it directly rather than only through the
- * environment that produces it.
- */
-export function stripOwnLabel(url: string, label: string): string {
-  try {
-    const parsed = new URL(url)
-    const parts = parsed.hostname.split('.')
-    // The label sits SECOND — after the surface's own subdomain — because the registry appended
-    // that subdomain to what it wrongly believed was the apex. A label anywhere else is not this
-    // bug and is left alone.
-    if (parts[1] !== label || parts.length < 3) return url
-    parsed.hostname = [parts[0], ...parts.slice(2)].join('.')
-    return parsed.toString().replace(/\/$/, '')
-  } catch {
-    // A URL that will not parse is not one this function can improve.
-    return url
-  }
-}
 
 /**
  * Every CloudsForge base URL the registry knows, for the current environment — corrected.

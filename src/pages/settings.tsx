@@ -7,7 +7,7 @@
  * and showing it is the fastest way to diagnose a page that is pointed at the wrong estate.
  */
 import { useEffect, useState } from 'react'
-import { apiBase, billingBase, hosts, EMBERKIN_DEV_PORT, EMBERKIN_SUBDOMAIN } from '../lib/hosts.ts'
+import { apiBase, billingBase, hosts } from '../lib/hosts.ts'
 import {
   DEFAULT_PREFS,
   readPrefs,
@@ -141,10 +141,9 @@ export function SettingsPage() {
           </dd>
         </dl>
         <p className="ek-note">
-          Emberkin is not yet in the shared surface registry, so its address is derived from the
-          Worlds API's — subdomain <code>{EMBERKIN_SUBDOMAIN}</code>, dev port{' '}
-          <code className="cf-num">{EMBERKIN_DEV_PORT}</code>. When the registry gains an entry this
-          line disappears along with the code behind it.
+          Emberkin resolves from the shared surface registry like every other surface — subdomain{' '}
+          <code>emberkin</code>, dev port <code className="cf-num">4100</code>, pinned there against
+          the service that binds it.
         </p>
       </section>
     </section>

@@ -4,7 +4,7 @@
  * `@cloudsforge/ui`'s surface registry has no `emberkin` key — `SurfaceKey` at
  * `ui/packages/ui/src/surfaces.ts:23-36` enumerates every surface and Emberkin is not among them,
  * because it was added to the programme after the registry was written. `micro-ui` is single-owner
- * and this repository does not edit it, so `deriveSurfaceUrl` builds the host from a registry entry
+ * and this repository does not edit it, so the host resolves from the registry's own entry
  * that DOES exist.
  *
  * The case worth pinning is the third one: `cloudsforgeHosts()` deliberately leaves an unknown
