@@ -1,16 +1,14 @@
 /**
- * Host resolution, including the workaround this repository has and no other frontend does.
+ * Host resolution — from the registry, like every other frontend, since the day the registry
+ * gained its `emberkin` entry (`ui/packages/ui/src/surfaces.ts:404`).
  *
- * `@cloudsforge/ui`'s surface registry has no `emberkin` key — `SurfaceKey` at
- * `ui/packages/ui/src/surfaces.ts:23-36` enumerates every surface and Emberkin is not among them,
- * because it was added to the programme after the registry was written. `micro-ui` is single-owner
- * and this repository does not edit it, so the host resolves from the registry's own entry
- * that DOES exist.
- *
- * The case worth pinning is the third one: `cloudsforgeHosts()` deliberately leaves an unknown
- * subdomain alone (`ui/packages/ui/src/index.tsx:149-158`), so on a preview deployment the whole
- * hostname is the apex, and a derivation that guessed at a shorter one would send every request
- * somewhere that does not exist.
+ * This header used to describe a workaround no other frontend had: the registry predated
+ * Emberkin, so hosts were DERIVED from the worlds-api anchor by `deriveSurfaceUrl`. That code is
+ * deleted — the promise its own header made, kept in full at last — and what this file pins now
+ * is the plain thing: `hosts()` resolves the registry entry, `apiBase()` is same-origin in
+ * production and the pinned devPort under `pnpm dev`, and a preview deployment's full hostname is
+ * treated as the apex because `cloudsforgeHosts()` deliberately leaves an unknown subdomain alone
+ * (`ui/packages/ui/src/index.tsx:149-158`).
  */
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, it } from 'node:test'
