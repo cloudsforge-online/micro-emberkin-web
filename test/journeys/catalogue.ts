@@ -31,21 +31,26 @@ import {
 } from './axe.ts'
 import type { Scenario } from './scenario.ts'
 
-/**
- * The estate's one design-system contrast defect, where this surface renders it.
- *
- * `--cf-fg-mute` is `#63757a` and measures 3.54:1 on the panel surface — under the 4.5:1 AA
- * threshold for normal text. It is a `micro-ui` token. `assertKnownStillBroken` asserts the rule
- * is STILL failing as well as that nothing else is, so the exclusion cannot outlive the defect.
- */
 /*
  * Empty, and it was established by trying to fill it.
  *
- * The estate's one design-system contrast defect — `--cf-fg-mute` at 3.54:1 on micro-ui's panel
- * surface — is carried by `web-template` and `foresight-admin-web`, which render the classes drawn
- * in it. This client's own `ek-` styles clear the threshold, and `assertKnownStillBroken` REJECTED
- * the exclusion when it was written in: it asserts the rule is still failing as well as that
- * nothing else is, so an unearned entry cannot sit here quietly.
+ * Two doc comments used to stand here. The first described "the estate's one design-system
+ * contrast defect" in the present tense — `--cf-fg-mute` at `#63757a`, 3.54:1 on micro-ui's panel
+ * — as though an entry for it sat below. None did, and the token has since been raised to
+ * `#7d9399` (5.29:1) in micro-ui `2f990be`, so the prose described a defect that was fixed and an
+ * exclusion that never existed, sitting above an empty array. That is how somebody later concludes
+ * the array is the thing that is wrong.
+ *
+ * What is true: this client's own `ek-` styles clear the threshold, and `assertKnownStillBroken`
+ * REJECTED the exclusion when it was written in — it asserts every entry is still failing as well
+ * as that nothing else is, so an unearned entry cannot sit here quietly. The list has been empty
+ * on merit since, and an empty list is the stronger assertion: `assertAxeClean` then tolerates
+ * nothing at all.
+ *
+ * If you ever do need an entry, it costs a `rule`, a `selector` naming the element it is actually
+ * about, and an `owner`. Keying by rule alone was itself a defect — one entry excused every
+ * violation of that rule id on the surface, and a sibling frontend stayed green for months with a
+ * 4.44:1 link hidden behind an entry written for something else. See axe.ts.
  */
 const KNOWN_A11Y: readonly KnownViolation[] = []
 

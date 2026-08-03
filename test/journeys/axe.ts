@@ -25,11 +25,19 @@ function axeSource(): string {
   return source
 }
 
+/** One element axe found the violation on. */
+export interface ViolationNode {
+  /** axe's own computed CSS selector for the element, joined across any iframe boundary. */
+  readonly target: string
+  /** The element's opening markup, truncated, for the failure message. */
+  readonly html: string
+}
+
 export interface Violation {
   readonly id: string
   readonly impact: string
   readonly help: string
-  readonly nodes: string[]
+  readonly nodes: readonly ViolationNode[]
 }
 
 export interface AxeOptions {
@@ -52,13 +60,27 @@ export async function axeViolations(page: Page, options: AxeOptions = {}): Promi
       const context = within ?? document
       const rules = Object.fromEntries(off.map((r) => [r, { enabled: false }]))
       const result = (await axe.run(context, { resultTypes: ['violations'], rules })) as {
-        violations: Array<{ id: string; impact: string; help: string; nodes: Array<{ html: string }> }>
+        violations: Array<{
+          id: string
+          impact: string
+          help: string
+          nodes: Array<{ html: string; target: Array<string | string[]> }>
+        }>
       }
+      // EVERY node, not the first three. The slice used to be applied here, and it was applied to
+      // the data the assertion reads and not merely to what it prints — so a fourth failing
+      // element on the same rule was invisible to the check as well as to the message. The
+      // truncation now happens in `describeViolations`, where it belongs.
       return result.violations.map((v) => ({
         id: v.id,
         impact: v.impact,
         help: v.help,
-        nodes: v.nodes.slice(0, 3).map((n) => n.html.slice(0, 160)),
+        nodes: v.nodes.map((n) => ({
+          target: (Array.isArray(n.target) ? n.target : [n.target])
+            .map((t) => (Array.isArray(t) ? t.join(' ') : String(t)))
+            .join(' '),
+          html: String(n.html).slice(0, 160),
+        })),
       }))
     },
     { within: options.within ?? null, disabled },
@@ -68,7 +90,11 @@ export async function axeViolations(page: Page, options: AxeOptions = {}): Promi
 
 export function describeViolations(violations: readonly Violation[]): string {
   return violations
-    .map((v) => `  [${v.impact}] ${v.id}: ${v.help}\n    ${v.nodes.join('\n    ')}`)
+    .map((v) => {
+      const shown = v.nodes.slice(0, 3).map((n) => `${n.target}\n      ${n.html}`)
+      const more = v.nodes.length > shown.length ? [`… and ${v.nodes.length - shown.length} more`] : []
+      return `  [${v.impact}] ${v.id}: ${v.help}\n    ${[...shown, ...more].join('\n    ')}`
+    })
     .join('\n')
 }
 
@@ -82,20 +108,93 @@ export function describeViolations(violations: readonly Violation[]): string {
  * suite goes red and the entry has to be deleted. An exclusion that could quietly stay for ever
  * would be the same defect as a test that can only pass, which is the class this whole suite was
  * written to stop the estate producing.
+ *
+ * ── AN ENTRY IS KEYED BY RULE **AND ELEMENT**, BECAUSE RULE ALONE WAS A BLANKET ───────────────
+ *
+ * It used to be keyed by `rule` alone, with `owner` as prose nothing read. So an entry added for
+ * one defect silently excused EVERY violation of that rule id on the surface, and a second,
+ * unrelated one could hide behind it indefinitely — including after the first was fixed, because
+ * the rule was still being seen and the entry therefore still looked live.
+ *
+ * That is not hypothetical, and it is the reason for this file's present shape.
+ * `micro-foresight-admin-web` recorded `color-contrast` against a micro-ui token; when micro-ui
+ * fixed the token that suite did NOT go red, because a link of its own — the market title on
+ * `/markets`, painted in `--cf-accent` — was failing the same rule at 4.44:1 and had been since
+ * the day it shipped. Deleting the entry is what found it. `assertKnownStillBroken` was working
+ * exactly as designed and reported nothing, because the entry WAS still failing; it was failing on
+ * a different element for a different reason, and nothing looked at which element.
+ *
+ * So `selector` is now required, and matching happens PER NODE. An entry excuses the elements it
+ * names and no others: a second `color-contrast` failure elsewhere on the same page fails the
+ * suite while the first is still excused. The blanket is gone; what is left is a note against one
+ * element.
+ *
+ * ── WHAT `selector` IS MATCHED AGAINST, AND WHY IT IS A SUBSTRING ──────────────────────────────
+ *
+ * axe reports, for every node, its own computed CSS selector (`target`). That is the stable thing
+ * to key on — `.wt-link`, `#root > main > p:nth-child(2)` — and it is what is matched first.
+ * The node's markup is matched as a fallback, for elements axe can only address positionally,
+ * where an `:nth-child` chain would break the moment a sibling is added and an exclusion that
+ * breaks on unrelated markup is an exclusion somebody deletes rather than earns.
+ *
+ * Substring, not equality, so `.wt-link` covers every link carrying that class — which is one
+ * defect, not several. Write the NARROWEST string that names what is actually broken. An entry
+ * whose selector matches nothing during the sweep is rejected by `assertKnownStillBroken`, so
+ * "make it broad enough to be safe" is not a way of making the suite quiet: broad enough to catch
+ * a second defect is also broad enough to be wrong about what it is excusing, and the reviewer of
+ * the next failure reads this string as the claim about what is broken.
+ *
+ * ── WHAT THIS STILL CANNOT SEE ────────────────────────────────────────────────────────────────
+ *
+ * A SECOND violation of the same rule on the SAME element. `.wt-link` failing contrast against its
+ * own background and again against a hover wash is one entry and two defects. That is a much
+ * smaller hole than "one entry, the whole page", but it is a hole, and the honest habit is
+ * unchanged: before adding an entry, look at what else on the surface produces that rule id, and
+ * never read a green suite carrying an exclusion as evidence the rest of the rule is clean.
  */
 export interface KnownViolation {
   readonly rule: string
+  /**
+   * The element this entry excuses — an axe `target` selector, or a distinguishing substring of
+   * one. Required, and matched: an entry that names nothing on the page is rejected.
+   */
+  readonly selector: string
   /** The repository that owns the fix, and what is actually wrong. */
   readonly owner: string
+}
+
+/** The identity of an exclusion: the pair it is keyed on, for the message and the still-broken set. */
+const keyOf = (k: KnownViolation): string => `${k.rule} @ ${k.selector}`
+
+/**
+ * Does this entry excuse this element?
+ *
+ * Rejects an empty or wildcard selector outright rather than treating it as "everything", because
+ * "everything" is the exact shape this change exists to remove and a silent re-entry through a
+ * blank string would be worse than the original — it would look narrow in the source.
+ */
+function excuses(known: KnownViolation, rule: string, node: ViolationNode): boolean {
+  const selector = known.selector.trim()
+  if (selector === '' || selector === '*') {
+    throw new Error(
+      `the exclusion for ${known.rule} has selector ${JSON.stringify(known.selector)}, which ` +
+        'excuses the whole rule on the whole surface — name the element it is actually about',
+    )
+  }
+  return known.rule === rule && (node.target.includes(selector) || node.html.includes(selector))
 }
 
 /**
  * Assert `page` is clean apart from `known`, and report which of `known` it actually hit.
  *
- * The second return value is what makes the exclusion honest, and it is accumulated ACROSS a
- * sweep rather than checked per page: a route with no muted caption on it does not exercise the
- * contrast defect, and demanding that every page fail every known rule would be demanding a page
- * be broken. `assertKnownStillBroken` closes the loop at the end of the sweep.
+ * The filtering is PER ELEMENT. A violation of an excused rule is stripped of the nodes some entry
+ * names, and whatever nodes are left over still fail — so a different element failing the same
+ * rule is a red suite, which is the whole change. A rule with no nodes left is fully excused.
+ *
+ * The return value is what makes the exclusion honest, and it is accumulated ACROSS a sweep rather
+ * than checked per page: a route with no muted caption on it does not exercise the contrast
+ * defect, and demanding that every page fail every known entry would be demanding a page be
+ * broken. `assertKnownStillBroken` closes the loop at the end of the sweep.
  */
 export async function assertAxeClean(
   page: Page,
@@ -104,30 +203,58 @@ export async function assertAxeClean(
   options: AxeOptions = {},
 ): Promise<Set<string>> {
   const violations = await axeViolations(page, options)
-  const allowed = new Set(known.map((k) => k.rule))
+  const matched = new Set<string>()
+  const unexpected: Violation[] = []
 
-  const unexpected = violations.filter((v) => !allowed.has(v.id))
-  if (unexpected.length > 0) {
-    throw new Error(`${where}: axe found serious or critical violations\n${describeViolations(unexpected)}`)
+  for (const violation of violations) {
+    const leftover = violation.nodes.filter((node) => {
+      const entry = known.find((k) => excuses(k, violation.id, node))
+      if (entry === undefined) return true
+      matched.add(keyOf(entry))
+      return false
+    })
+    if (leftover.length > 0) unexpected.push({ ...violation, nodes: leftover })
   }
-  return new Set(violations.map((v) => v.id))
+
+  if (unexpected.length > 0) {
+    const excused = known.filter((k) => matched.has(keyOf(k)))
+    throw new Error(
+      `${where}: axe found serious or critical violations\n${describeViolations(unexpected)}` +
+        (excused.length > 0
+          ? '\n  These are NOT the elements this surface already excuses — the exclusions below ' +
+            'matched other nodes on this page, and do not cover the ones above:\n' +
+            excused.map((k) => `    ${keyOf(k)} — owned by ${k.owner}`).join('\n')
+          : ''),
+    )
+  }
+  return matched
 }
 
 /**
- * Every known violation was still seen somewhere in the sweep.
+ * Every known violation was still seen ON THE ELEMENT IT NAMES, somewhere in the sweep.
  *
  * Without this the exclusion list is a permanent excuse: it would silently outlive the defect and
  * quietly suppress the same rule when it came back somewhere else. With it, the day micro-ui
  * raises the token the suite goes red and says which entry to delete — a check that fails in both
- * directions, which is what this estate keeps not building.
+ * directions, which is what this estate keeps not building. This half was never the defect and is
+ * deliberately unchanged in substance; it is what correctly reddened two of the three repositories
+ * carrying the cool-ramp entry.
+ *
+ * What HAS changed is what counts as "still seen". It used to be the rule id, so an entry stayed
+ * live as long as anything on the surface produced that id — which is precisely how a fixed defect
+ * kept a live-looking entry while a different element failed underneath it. It is now the
+ * rule-and-element pair, so an entry goes stale when ITS element is fixed, whatever else on the
+ * page is still failing.
  */
 export function assertKnownStillBroken(seen: ReadonlySet<string>, known: readonly KnownViolation[]): void {
-  const fixed = known.filter((k) => !seen.has(k.rule))
+  const fixed = known.filter((k) => !seen.has(keyOf(k)))
   if (fixed.length > 0) {
     throw new Error(
-      `${fixed.map((f) => f.rule).join(', ')} no longer fails anywhere on this surface.\n` +
-        `That is good news, and the exclusion must now be deleted from this scenario:\n` +
-        fixed.map((f) => `  ${f.rule} — was owned by ${f.owner}`).join('\n'),
+      `${fixed.map(keyOf).join(', ')} no longer fails on the element it names, anywhere on this ` +
+        'surface.\nEither it is fixed — in which case delete the entry — or the element moved and ' +
+        'the selector is now wrong, in which case the entry is excusing nothing and hiding ' +
+        'whatever took its place:\n' +
+        fixed.map((f) => `  ${keyOf(f)} — was owned by ${f.owner}`).join('\n'),
     )
   }
 }

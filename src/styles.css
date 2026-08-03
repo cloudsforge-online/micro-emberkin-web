@@ -85,8 +85,19 @@ body {
   margin: 0.5rem 0 0;
 }
 
+/*
+ * `--cf-accent-text`, not `--cf-accent`. This surface sets data-cf-product="worlds" on the warm
+ * substrate, where `#6d9a49` measures 4.83:1 on the tightest ground micro-ui composes text on —
+ * so this rule passed axe, and would have gone on passing, for a reason that has nothing to do
+ * with the rule being right. `--cf-accent` is validated at >= 3:1, the floor for a border or an
+ * outline; this paints body copy, where the floor is 4.5:1. A sibling cut from the same template
+ * set `foresight` instead and shipped the identical rule at 4.44:1, failing from day one.
+ *
+ * `--cf-accent-text` is the same hue derived to clear 4.5:1 on every ground, for every product,
+ * so the rule stops depending on which accent this surface happens to wear. micro-ui fbf44b4.
+ */
 .wt-link {
-  color: var(--cf-accent);
+  color: var(--cf-accent-text);
 }
 
 .wt-facts {
@@ -968,7 +979,8 @@ body {
 
 .ek-slot__mark {
   font-size: 0.72rem;
-  color: var(--cf-accent);
+  /* 0.72rem is 11.5px — normal text, 4.5:1, so the text step rather than the 3:1 accent. */
+  color: var(--cf-accent-text);
 }
 
 /* ----------------------------- settings + credits ----------------------------- */
