@@ -21,7 +21,7 @@
  * the very thing the client is forbidden to know.
  */
 import assert from 'node:assert/strict'
-import { assertMounted, open, type Stubs } from './browser.ts'
+import { assertMounted, renderOnlyWithStubbedNetwork, type Stubs } from './browser.ts'
 import {
   assertAxeClean,
   assertKnownStillBroken,
@@ -155,7 +155,7 @@ export const CATALOGUE: readonly Scenario[] = [
       const real = await surface.fetchStatus('/art/MANIFEST.json')
       assert.equal(real.status, 200, 'the art manifest is not served')
 
-      const session = await open(surface.origin, { path: '/nope', storage: SIGNED_IN, stubs: BASE })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/nope', storage: SIGNED_IN, stubs: BASE })
       try {
         assert.equal(session.status, 404)
         await assertMounted(session)
@@ -180,7 +180,7 @@ export const CATALOGUE: readonly Scenario[] = [
       // A machine with no GPU, expressed the way one behaves: `getContext('webgl')` answers null.
       // Deleting the module would be a different experiment — it would change the import graph,
       // which is half of what this scenario is about.
-      const session = await open(surface.origin, { storage: SIGNED_IN, stubs: BASE, noWebgl: true })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { storage: SIGNED_IN, stubs: BASE, noWebgl: true })
       try {
         const text = await assertMounted(session)
         assert.ok(text.trim().length > 100, 'the play screen collapsed to almost nothing')
@@ -208,7 +208,7 @@ export const CATALOGUE: readonly Scenario[] = [
     tier: 1,
     asserts: 'presentation',
     async run(surface) {
-      const session = await open(surface.origin, { path: '/party', storage: SIGNED_IN, stubs: BASE })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/party', storage: SIGNED_IN, stubs: BASE })
       try {
         await assertMounted(session)
         // Not five disabled buttons. A disabled control reads as "not yet, ask somebody", and this
@@ -235,7 +235,7 @@ export const CATALOGUE: readonly Scenario[] = [
     asserts: 'presentation',
     gate: true,
     async run(surface) {
-      const session = await open(surface.origin, { path: '/wardrobe', storage: SIGNED_IN, stubs: BASE })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/wardrobe', storage: SIGNED_IN, stubs: BASE })
       try {
         const text = await assertMounted(session)
         // A shop that hedges is a shop that expects to be asked, so the claim is unhedged and it is
@@ -277,7 +277,7 @@ export const CATALOGUE: readonly Scenario[] = [
       'own nothing will read it as a theft, and the request id is what a support conversation ' +
       'then runs on.',
     async run(surface) {
-      const empty = await open(surface.origin, {
+      const empty = await renderOnlyWithStubbedNetwork(surface.origin, {
         path: '/wardrobe',
         storage: SIGNED_IN,
         stubs: BASE,
@@ -289,7 +289,7 @@ export const CATALOGUE: readonly Scenario[] = [
         await empty.close()
       }
 
-      const broken = await open(surface.origin, {
+      const broken = await renderOnlyWithStubbedNetwork(surface.origin, {
         path: '/wardrobe',
         storage: SIGNED_IN,
         stubs: [
@@ -338,7 +338,7 @@ export const CATALOGUE: readonly Scenario[] = [
       }
       assert.ok(manifest.disclosure, 'the shipped manifest carries no disclosure to render')
 
-      const session = await open(surface.origin, { path: '/credits', storage: SIGNED_IN, stubs: BASE })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/credits', storage: SIGNED_IN, stubs: BASE })
       try {
         const text = await assertMounted(session)
         assert.ok(
@@ -361,7 +361,7 @@ export const CATALOGUE: readonly Scenario[] = [
     tier: 1,
     asserts: 'presentation',
     async run(surface) {
-      const session = await open(surface.origin, { path: '/settings', storage: SIGNED_IN, stubs: BASE })
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/settings', storage: SIGNED_IN, stubs: BASE })
       try {
         const text = await assertMounted(session)
         // Served from 127.0.0.1, so `cloudsforgeHosts()` must resolve every surface to a localhost
@@ -386,7 +386,7 @@ export const CATALOGUE: readonly Scenario[] = [
     tier: 1,
     asserts: 'client-request',
     async run(surface) {
-      const session = await open(surface.origin, {
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, {
         path: '/#cf_code=handoff-code-123',
         stubs: [['POST /auth/handoff/redeem', { json: { accessToken: 'a', refreshToken: 'r' } }], ...BASE],
       })
@@ -412,7 +412,7 @@ export const CATALOGUE: readonly Scenario[] = [
     async run(surface) {
       const seen = new Set<string>()
       for (const path of [...OWNED, '/nope']) {
-        const session = await open(surface.origin, {
+        const session = await renderOnlyWithStubbedNetwork(surface.origin, {
           path,
           storage: SIGNED_IN,
           stubs: BASE,
@@ -433,7 +433,7 @@ export const CATALOGUE: readonly Scenario[] = [
     tier: 1,
     asserts: 'presentation',
     async run(surface) {
-      const session = await open(surface.origin, {
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, {
         storage: SIGNED_IN,
         stubs: BASE,
         reducedMotion: true,
@@ -488,7 +488,7 @@ export const CATALOGUE: readonly Scenario[] = [
     asserts: 'presentation',
     async run(surface) {
       for (const path of OWNED) {
-        const session = await open(surface.origin, {
+        const session = await renderOnlyWithStubbedNetwork(surface.origin, {
           path,
           storage: SIGNED_IN,
           stubs: BASE,

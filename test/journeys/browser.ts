@@ -1,6 +1,29 @@
 /**
- * A real browser, driven by `playwright-core`, for the tier-1 and tier-2 scenarios of
+ * A real browser and a FAKE NETWORK, for the tier-1 and tier-2 scenarios of
  * docs/ecosystem/22-browser-journeys.md.
+ *
+ * ══════════════════════════════════════════════════════════════════════════════════════════════
+ * READ THIS BEFORE TRUSTING ANYTHING IN THIS DIRECTORY.
+ *
+ * The engine below is genuine Chromium. The network it renders against is not: this file installs
+ * `page.route('**\/*', ...)` and answers EVERY request from a fixture table. It therefore CANNOT
+ * SEE an unreachable API, a wrong host, an unrouted path, a CORS refusal, a 404 on a stylesheet
+ * or a service that is down — every one of those is answered here with a cheerful 200.
+ *
+ * The entry point is named `renderOnlyWithStubbedNetwork` for that reason, and its own header
+ * carries the full account. It used to be called `open()`, and under that name the estate shipped
+ * three completely unstyled surfaces, four more whose reads 404'd or 401'd in a browser, and a
+ * degradation banner shown to every visitor of a healthy game — with CI green and 314 specified
+ * browser scenarios green throughout.
+ *
+ * **The tier that CAN see those is `micro-beacon`'s smoke tier** — `beacon/src/browser/smoke.ts`,
+ * run as `beacon smoke` / `pnpm smoke` — which drives real Chromium through the real gateway with
+ * nothing intercepted, and fails structurally if any request interception ever appears in it.
+ *
+ * What is here is still worth having: everything downstream of a response is genuine rendering
+ * logic, tested cheaply and deterministically with no estate required. It is simply not, and
+ * cannot become, evidence that anything is reachable.
+ * ══════════════════════════════════════════════════════════════════════════════════════════════
  *
  * ── Why a real browser, when the rest of this suite deliberately has no DOM ────────────────────
  *
@@ -280,12 +303,58 @@ export interface Session {
 }
 
 /**
- * Open `origin + path`, with the API stubbed, and hand back what happened.
+ * Render this bundle against a FAKE NETWORK, and hand back what happened.
+ *
+ * ══════════════════════════════════════════════════════════════════════════════════════════════
+ * THE NAME IS THE WARNING. THIS FUNCTION CANNOT DETECT AN UNREACHABLE API.
+ *
+ * It calls `page.route('**\/*', ...)` and answers EVERY request from the stub table below. The
+ * bundle is real, the browser is real, the rendering is real — and the network is not there at
+ * all. So the whole class of defect that lives between this bundle and the estate is structurally
+ * invisible to it:
+ *
+ *   * an API host that does not resolve, or resolves to nothing;
+ *   * a path the gateway does not route, answered by the static file server with its own
+ *     index.html or a 404;
+ *   * a request that works on the host and is refused in a page — CORS, a cookie policy, a
+ *     mixed-content block;
+ *   * a stylesheet or a bundle that 404s;
+ *   * a service that is simply down.
+ *
+ * Every one of those is answered here by a fixture, cheerfully, with a 200.
+ *
+ * THIS IS NOT HYPOTHETICAL. It was called `open()` while it did all of the above, and the estate
+ * shipped: three surfaces rendering completely unstyled, four more with reads answering 404 or
+ * 401 in the browser, a degradation banner shown to every visitor of a healthy game because a
+ * readiness probe was landing on nginx. CI was green. 314 specified browser scenarios were green.
+ * The owner opened a browser and most of the estate was broken. A name that says `open` invites
+ * the next reader to believe these scenarios opened the product; they opened a rehearsal of it.
+ *
+ * ── What CAN see those defects ────────────────────────────────────────────────────────────────
+ *
+ * `micro-beacon`'s smoke tier — `beacon/src/browser/smoke.ts`, run with `beacon smoke` or
+ * `pnpm smoke` from that repository. It drives real Chromium through the real gateway with
+ * NOTHING intercepted, and it enforces structurally that it never acquires an intercept: it fails
+ * if `page.route`, `route.fulfill`, `setOfflineMode` or `route.abort` appears anywhere in its own
+ * browser code. That is the tier a reachability question belongs in. This one cannot answer it,
+ * and no amount of care inside a scenario here can make it able to.
+ *
+ * ── And what these scenarios ARE good for, which is a lot ─────────────────────────────────────
+ *
+ * Everything downstream of a response: that the map draws one target per island the response
+ * carried, that the launch control stays inoperable until a cost has been quoted, that a battle
+ * digest is shown rather than recomputed, that a 503 becomes a banner and a 404 does not. Those
+ * are genuine rendering logic, they are cheap, they are deterministic, they run with no estate,
+ * and deleting them would be a loss. They are simply not evidence that anything is reachable.
  *
  * Deliberately does NOT assert anything: a scenario says what it needs, and `assertMounted` below
  * is the shared floor that most of them start from.
+ * ══════════════════════════════════════════════════════════════════════════════════════════════
  */
-export async function open(origin: string, options: PageOptions = {}): Promise<Session> {
+export async function renderOnlyWithStubbedNetwork(
+  origin: string,
+  options: PageOptions = {},
+): Promise<Session> {
   const consoleErrors: string[] = []
   const resourceErrors: string[] = []
   const failedRequests: string[] = []
