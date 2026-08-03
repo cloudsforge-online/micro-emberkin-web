@@ -375,7 +375,10 @@ export async function open(origin: string, options: PageOptions = {}): Promise<S
     // estate, and a scenario that had not thought about it would fail on a connection refusal it
     // did not arrange. The bodies are kept: what the bundle REPORTED is often the clearest
     // evidence of what it thought went wrong.
-    if (url.pathname === '/ingest/browser') {
+    // The path is `/ingest/client` and NOT `/ingest/browser`. This mock intercepted the stale path
+    // for as long as the bundle posted to it, which made it a test that could not fail: after the
+    // app moved, an intercept on a path nothing calls silently matches nothing.
+    if (url.pathname === '/ingest/client') {
       try {
         reported.push(JSON.parse(sent.body ?? 'null'))
       } catch {
