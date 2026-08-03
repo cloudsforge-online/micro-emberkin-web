@@ -21,6 +21,34 @@
  *
  * `checkCatalogue` below refuses to pass rather than reporting green, which is the same shape as
  * beacon's rule that a declared-but-faked journey is worse than no journey.
+ *
+ * ── THE ASSERTION SHAPE TO WATCH FOR, WHICH NO META-TEST CAN CATCH ────────────────────────────
+ *
+ * A SELF-REFERENTIAL ASSERTION: comparing the rendered page against the same module the page
+ * renders FROM.
+ *
+ *     import { PLATFORM } from '../../src/content/pages.ts'
+ *     assert.ok(text.includes(PLATFORM.tests[0]))     // ← rewrite pages.ts and both sides move
+ *
+ * It is green for any value, which makes it the same defect as `ui/packages/ui/src/auth.test.ts`
+ * asserting the client posts to the URL the client was written to post to — the test that let
+ * `/auth/exchange`, a route micro-identity has never served, live in thirteen frontends.
+ *
+ * It is not always wrong. Comparing the page against an imported constant proves the page is WIRED
+ * to it — that the list is complete, in order, not truncated — and that is worth having. What it
+ * cannot prove is that the words still say what they said. So wherever the WORDS are the product
+ * decision, write one literal into the test as well:
+ *
+ *     assert.ok(callout.includes('Nothing is deployed'))
+ *
+ * Two rules learned from doing it badly first:
+ *
+ *   1. SCOPE THE LITERAL TO THE ELEMENT, not the page. `micro-site`'s first anchor searched the
+ *      whole body for "Nothing is deployed", and the phrase also appears in two product stage
+ *      notes further down — so softening the headline left it green. A literal in the wrong scope
+ *      is a self-referential assertion with extra steps.
+ *   2. PROVE IT. Reword the copy, watch the test go red, put the copy back. An anchor nobody has
+ *      seen fail is an anchor nobody knows works.
  */
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
@@ -67,6 +95,33 @@ export interface Scenario {
   readonly expectStatus?: number
   /** ⛔ — why this scenario cannot be written as code today. A specification, not coverage. */
   readonly blocked?: string
+  /**
+   * The blocker, expressed as something a machine can check, so it cannot go stale.
+   *
+   * ── Why prose alone is not enough ─────────────────────────────────────────────────────────────
+   *
+   * A `blocked` reason is a claim about the estate written at one moment. The estate then moves.
+   * This suite shipped with `BJ-ACC-01` blocked on "nothing in the estate serves a sign-in page",
+   * which was true when it was written and was false within days: `micro-hub-web` now serves
+   * `/account/login`, `/account/register` and `/account/logout`. Nothing went red. A gap that has
+   * quietly closed reads exactly like a gap that is still open, and the scenario stays unwritten
+   * for no reason anybody can see — which is the same defect as a test that cannot fail, wearing
+   * a different hat.
+   *
+   * So a blocker names a FILE and a string, relative to the estate root, and `runCatalogue`
+   * asserts the premise still holds wherever the sibling is on disk:
+   *
+   *   `{ absent: 'hub-web/src/app.tsx#account/login' }`  — blocked BECAUSE this is missing.
+   *   `{ present: 'deploy/compose/docker-compose.estate.yml#no frontend' }` — blocked because
+   *     this is still there.
+   *
+   * When the estate closes the gap, this goes red and says which scenario is now writable. That is
+   * the only mechanism that makes "specified rather than omitted" mean anything a month later.
+   *
+   * Omit it only when the blocker is genuinely not a fact about a file — "this needs two live
+   * origins" — and say so in `blocked`.
+   */
+  readonly blockedWhile?: { readonly absent?: string; readonly present?: string }
   readonly run?: (surface: Surface) => Promise<void>
 }
 
@@ -101,6 +156,15 @@ export function checkCatalogue(scenarios: readonly Scenario[]): Finding[] {
       if (s.run) findings.push({ id: s.id, problem: 'is blocked and yet carries an implementation' })
       if (s.blocked.trim().length < 20) {
         findings.push({ id: s.id, problem: 'is blocked without saying what the blocker is' })
+      }
+      const where = s.blockedWhile
+      if (where && !where.absent && !where.present) {
+        findings.push({ id: s.id, problem: 'blockedWhile names neither an absent nor a present anchor' })
+      }
+      for (const anchor of [where?.absent, where?.present]) {
+        if (anchor && !/^[\w.-]+\/[^\s#]+#.+$/.test(anchor)) {
+          findings.push({ id: s.id, problem: `blockedWhile "${anchor}" is not a <repo>/<path>#<string>` })
+        }
       }
       continue
     }
@@ -189,6 +253,51 @@ export function runCatalogue(name: string, scenarios: readonly Scenario[]): void
         [],
         'an ownedBy names a test that is not there',
       )
+    })
+
+    it('every blocker that can be checked is still true', () => {
+      /*
+       * THE ASSERTION THAT STOPS A GAP FROM CLOSING UNNOTICED.
+       *
+       * `BJ-ACC-01` was blocked on "nothing in the estate serves a sign-in page". It was true when
+       * it was written; `micro-hub-web` served `/account/login` days later and nothing went red.
+       * A blocker is a claim about the estate, and a claim nothing checks is a claim that rots —
+       * which is precisely what this suite exists to stop the estate producing.
+       *
+       * Checked wherever the sibling is on disk, and REPORTED rather than skipped when it is not:
+       * in CI only this repository and micro-ui are checked out, so a silent pass either way would
+       * be a check whose result does not depend on anything.
+       */
+      const claims = scenarios.filter(
+        (s): s is Scenario & { blockedWhile: NonNullable<Scenario['blockedWhile']> } =>
+          Boolean(s.blocked && s.blockedWhile),
+      )
+      const stale: string[] = []
+      let checked = 0
+      let unavailable = 0
+      for (const s of claims) {
+        for (const [kind, anchor] of [
+          ['absent', s.blockedWhile.absent],
+          ['present', s.blockedWhile.present],
+        ] as const) {
+          if (!anchor) continue
+          const state = resolveOwnedBy(anchor)
+          if (state === 'unavailable') {
+            unavailable += 1
+            continue
+          }
+          checked += 1
+          const found = state === 'resolved'
+          if (kind === 'absent' && found) {
+            stale.push(`${s.id}: blocked because ${anchor} is missing — it is there now, so write it`)
+          }
+          if (kind === 'present' && !found) {
+            stale.push(`${s.id}: blocked because ${anchor} is still there — it is gone now, so write it`)
+          }
+        }
+      }
+      console.log(`  blockers: ${checked} checked, ${unavailable} sibling(s) not checked out`)
+      assert.deepEqual(stale, [], `a blocker has gone stale:\n  ${stale.join('\n  ')}`)
     })
 
     it('records the scenarios that cannot be written, with the reason', () => {
