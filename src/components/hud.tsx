@@ -114,6 +114,13 @@ export function HudStrip() {
                   aria-valuemin={0}
                   aria-valuemax={max ?? 0}
                   aria-valuetext={`${name}, ${kin.currentHp} of ${max} HP`}
+                  /*
+                   * `aria-label` AS WELL AS `aria-valuetext`, and axe is right to want both.
+                   * `valuetext` replaces the announced VALUE; it is not a name, so a screen reader
+                   * had six meters on the party HUD with no way to say which Kin each belonged to
+                   * until it was read. `aria-meter-name`, found by running axe against the page.
+                   */
+                  aria-label={`${name} health`}
                 >
                   <span
                     className={`ek-hud__hpfill${fraction <= 0.2 ? ' is-critical' : fraction <= 0.5 ? ' is-low' : ''}`}

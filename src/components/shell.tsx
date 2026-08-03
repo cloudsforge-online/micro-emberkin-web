@@ -23,6 +23,17 @@ export function AppShell() {
 
   return (
     <>
+      {/*
+        The skip link is the first focusable thing in the document, and it is visually hidden until
+        it TAKES FOCUS, at which point it must become visible. A skip link that stays hidden when
+        focused is worse than none: a keyboard reader activates it and cannot tell whether anything
+        happened. `site` and `network-site` already ship one; this shell did not, so every keyboard
+        user tabbed through the whole shared bar and the sub-navigation to reach the page, on every
+        navigation.
+      */}
+      <a className="ek-skip" href="#main">
+        Skip to the page
+      </a>
       <CloudsForgeBar current={PRODUCT} account={account} onSignIn={() => signIn()} onSignOut={signOut} />
 
       {/*

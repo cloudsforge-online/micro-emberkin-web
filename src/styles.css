@@ -1302,3 +1302,44 @@ body {
 [data-ek-reduce-motion='true'] .wt-spinner {
   animation: none;
 }
+
+/* -----------------------------------------------------------------------
+ * The skip link. Hidden until focused, and then unmistakably visible.
+ *
+ * `top` moves rather than `display` toggling, because a link that is
+ * `display: none` is not focusable at all and a skip link that cannot be
+ * reached by Tab is decoration. The focused position clears the shared bar
+ * by its own height token, so it does not land underneath it.
+ * ------------------------------------------------------------------- */
+.ek-skip {
+  position: absolute;
+  left: var(--cf-space-sm);
+  top: -4rem;
+  z-index: 100;
+  padding: var(--cf-space-sm) var(--cf-space-xl);
+  border-radius: var(--cf-radius);
+  background: var(--cf-accent);
+  color: var(--cf-accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+  transition: top var(--cf-speed) var(--cf-ease);
+}
+
+.ek-skip:focus {
+  top: calc(var(--cf-bar-h) + var(--cf-space-sm));
+}
+
+/*
+ * The skip link does not slide for a reader who asked for less motion.
+ *
+ * `prefers-reduced-motion: reduce` is an accessibility setting rather than a taste — for some
+ * readers motion causes nausea or triggers a vestibular episode — and this file already honours it
+ * elsewhere. The skip link was the last thing on the surface still moving, which is only
+ * discoverable by setting the preference and reading COMPUTED durations: the rule is right there
+ * in the stylesheet and says nothing about who it applies to. Found by BJ-A11Y-11.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .ek-skip {
+    transition: none;
+  }
+}
