@@ -1,5 +1,11 @@
 # micro-emberkin-web
 
+[![ci](https://github.com/cloudsforge-online/micro-emberkin-web/actions/workflows/ci.yml/badge.svg)](https://github.com/cloudsforge-online/micro-emberkin-web/actions/workflows/ci.yml)
+![node](https://img.shields.io/badge/node-%3E%3D22-5FA04E?logo=node.js&logoColor=white)
+![typescript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![module](https://img.shields.io/badge/module-ESM-F7DF1E?logo=javascript&logoColor=black)
+![tests](https://img.shields.io/badge/tests-headless%20Chromium-2EAD33?logo=googlechrome&logoColor=white)
+
 **Emberkin: Resonance** — the game client for the second Forge Worlds title.
 
 A Warden does not command a Kin; they bond with one. What that bond becomes — **Resonance**, its
@@ -310,7 +316,7 @@ names every missing file. What is left is 429 independent assertions, which is m
 
 ---
 
-## Provenance
+## Art manifest and lineage
 
 Every image is AI-generated. `public/art/MANIFEST.json` carries per-asset provenance — prompt,
 model, dimensions, post-processing, C2PA state, licence — and is served whole at
@@ -321,3 +327,10 @@ does not belong in a game client's entry chunk.
 The game itself descends from KINDRED: Resonance. The battle engine, the 50 species, the 47 moves,
 the 9 elements and the Resonance / Temperament / Sync system are its design, ported and kept.
 `kindred-resonance` is read-only reference and is not modified.
+
+---
+
+## Provenance
+
+The code in this repository was written by **Claude Opus 5** and **Claude Fable 5**, assets
+generated with **FLUX 2 Pro**, under human direction and review.
