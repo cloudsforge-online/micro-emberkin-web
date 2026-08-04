@@ -65,6 +65,18 @@ import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloud
  * game should see the platform they are playing on highlighted.
  */
 export const PRODUCT: SurfaceKey = 'worlds'
+/**
+ * The surface this application IS, for the footer. **Deliberately not `'worlds'`.**
+ *
+ * The two constants answer two different questions and collapsing them would make one of them
+ * wrong. `PRODUCT` is what the BAR marks current, and the switcher is a list of platforms a
+ * player chooses between — Emberkin is played through Forge Worlds, so `worlds` is the honest
+ * highlight there. The FOOTER lists surfaces, and Emberkin is one: it has its own registry row and
+ * its own hostname (`emberkin` in @cloudsforge/ui's surfaces.ts). So "you are here" in the footer is
+ * Emberkin, and the footer's closing line reads Emberkin's own blurb rather than Forge Worlds'.
+ */
+export const FOOTER_SURFACE: SurfaceKey = 'emberkin'
+
 
 /** The name reported to the observability ingest and shown in error copy. */
 export const APP_NAME = 'emberkin-web'

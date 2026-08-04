@@ -9,9 +9,9 @@
  * whole navigation, so it is a `<nav>` with real links and a real current-page marker, and it is
  * keyboard navigable in source order.
  */
-import { CloudsForgeBar } from '@cloudsforge/ui'
+import { CloudsForgeBar, CloudsForgeFooter } from '@cloudsforge/ui'
 import { NavLink, Outlet } from 'react-router-dom'
-import { PRODUCT } from '../lib/hosts.ts'
+import { FOOTER_SURFACE, PRODUCT } from '../lib/hosts.ts'
 import { useSession } from '../lib/auth.tsx'
 import { useGame } from '../lib/game.tsx'
 import { NAV } from '../lib/routes.ts'
@@ -77,6 +77,16 @@ export function AppShell() {
       <main className="ek-main" id="main">
         <Outlet />
       </main>
+
+      {/*
+        The company footer, from @cloudsforge/ui. Every link in it is derived from the surface
+        registry, so a new product appears here without this file changing — which is the reason
+        the estate is not growing a fifth hand-rolled footer beside the four it already had.
+
+        `current` is FOOTER_SURFACE, not the bar's surface: see lib/hosts.ts for why those are two
+        different questions. `account` decides only whether the operator surfaces are offered.
+      */}
+      <CloudsForgeFooter current={FOOTER_SURFACE} account={account} />
     </>
   )
 }
