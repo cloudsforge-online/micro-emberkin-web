@@ -25,6 +25,20 @@
  * interception. If `page.route` ever disappears from it, this file is guarding a warning about a
  * thing that no longer happens, and the warning has become noise that the next reader will
  * correctly delete.
+ *
+ * ── The fourth check reads CODE, and the reason is a hole this guard shipped with ─────────────
+ *
+ * That fourth check used to be `SOURCE.includes('page' + '.route(')` against the whole harness.
+ * That check COULD NOT FAIL. The harness explains itself at length, and its header quotes
+ * `page.route` three times before the single line that actually calls it — so deleting the call
+ * outright leaves the string behind in prose and the assertion green. Driven, not reasoned:
+ * `await page.route('**\/*', …)` was deleted from `test/journeys/browser.ts` with the header left
+ * intact, and all four assertions still passed, this one included.
+ *
+ * That is precisely the defect this guard exists to prevent — a check that reads a description of
+ * the thing instead of the thing — reproduced inside the guard. So the assertion below strips
+ * comments first and requires the real catch-all call in the remaining executable source. This
+ * now matches `micro-web-template`'s copy, which is the estate's reference for this file.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
  */
 import assert from 'node:assert/strict'
@@ -38,15 +52,37 @@ const SOURCE = readFileSync(HARNESS, 'utf8')
 /** The header with its comment markers gone, so a quoted phrase is still readable text. */
 const PROSE = SOURCE.replace(/^\s*\*\/?/gm, ' ')
 
+/**
+ * The harness with every comment LINE removed — what the file DOES, with what it SAYS taken out.
+ *
+ * Done by line and not with a `/* … *\/` regex, which is the obvious way and is wrong here. The
+ * interception this file exists to find is `page.route('**\/*', …)`, and the catch-all pattern
+ * `'**\/*'` CONTAINS the character pair that opens a block comment. A regex sweep therefore
+ * treats the middle of the very line being looked for as the start of a comment, eats it, and the
+ * assertion below fails on a harness that is perfectly intact. That was driven, not reasoned: the
+ * regex form was run against this repository's unmutated harness and went red.
+ *
+ * Every comment in the harness is either a JSDoc block, whose continuation lines begin with `*`,
+ * or a whole-line `//`. Neither shape can begin a line of real code, so dropping those lines is
+ * both safe and sufficient. A trailing `//` after code survives, which is harmless: no trailing
+ * comment in that file quotes the interception.
+ */
+const CODE = SOURCE.split('\n')
+  .filter((line) => !/^\s*(?:\/\*|\*|\/\/)/.test(line))
+  .join('\n')
+
 describe('the stubbing harness states what it does', () => {
   it('still intercepts every request — otherwise this whole file is guarding nothing', () => {
-    // Deliberately assembled rather than written out, so this assertion does not match its own
-    // explanation in the header above.
-    const intercept = ['page', '.route('].join('')
+    // Assembled rather than written out, so this assertion does not match its own explanation in
+    // the header above — and matched against CODE, not SOURCE, so it does not match the harness's
+    // explanation either. The three `page.route` mentions in that file's header used to be enough
+    // to keep this green with the real call deleted.
+    const intercept = ['page', ".route('**/*'"].join('')
     assert.ok(
-      SOURCE.includes(intercept),
-      'the harness no longer intercepts requests; if that is true the warnings it carries are ' +
-        'stale and this guard should be deleted along with them, deliberately',
+      CODE.includes(intercept),
+      'the harness no longer intercepts every request. Either it stopped stubbing — in which ' +
+        'case the warnings it carries are stale and this guard should be deleted along with ' +
+        'them, deliberately — or the interception moved and this check must be re-aimed at it',
     )
   })
 
