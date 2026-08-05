@@ -157,12 +157,12 @@ places, both of which delete themselves the day an entry lands.
    (`worlds-api`) and swaps the subdomain, or the dev port on localhost. It adds only the two facts
    the registry lacks: the subdomain `emberkin` and port `4100` (`emberkin/src/env.ts:121`).
 
-   **`worlds-api` is a poor donor row and should be swapped.** That hostname was retired on the
-   public estate — folded into `api.<apex>`, and `worlds-api.cloudsforge.online` has no DNS record
-   as of 2026-08-05 — so the row this derivation leans on is a fossil that may be deleted outright.
-   Only the row's *subdomain string* is used and it is immediately discarded, so nothing is broken
-   today; but the day `worlds-api` leaves the registry, this call throws. Any surviving row works
-   equally well. Reported to micro-ui.
+   **RESOLVED, AND IN THE STRONGEST WAY — THE DERIVATION IS GONE.** This paragraph used to warn
+   that `worlds-api` was a poor donor row and that "the day `worlds-api` leaves the registry, this
+   call throws". That day was 2026-08-05: the hostname was folded into `api.<apex>`, it never had a
+   DNS record, and its registry row was deleted. Nothing throws, because `deriveSurfaceUrl` was
+   deleted first — the registry gained a real `emberkin` entry and `apiBase()` now reads it
+   directly (`src/lib/hosts.ts`). The workaround kept the promise its own header made.
 
 2. **The registry's other answers are corrected**, and this one is a real defect rather than an
    inconvenience. `cloudsforgeHosts()` derives the apex by stripping a *known* subdomain, and
