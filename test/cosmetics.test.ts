@@ -2,7 +2,7 @@
  * The anti-pay-to-win rule, tested rather than promised.
  *
  * 19 §1.2: monetisation is cosmetics and season passes, "never stat advantage".
- * `emberkin/src/cosmetics.ts:1-9` enforces the service half by ABSENCE — there is no code path
+ * `emberkin/src/cosmetics.ts` enforces the service half by ABSENCE — there is no code path
  * from equipping to a stat. An absence is not something a client can inherit, because a client can
  * still lie about it in prose or quietly apply a modifier of its own.
  *
@@ -66,7 +66,7 @@ function kin(overrides: Partial<KinSave> = {}): KinSave {
 }
 
 describe('the slots', () => {
-  it('are exactly the five emberkin/src/cosmetics.ts:32 accepts', () => {
+  it('are exactly the five emberkin/src/cosmetics.ts accepts', () => {
     assert.deepEqual([...SLOTS], ['frame', 'trail', 'title_card', 'hud', 'battle_intro'])
   })
 
@@ -200,7 +200,7 @@ describe('wardrobeFrom', () => {
   })
 
   it('NEVER offers a season pass as something to wear', () => {
-    // `emberkin/src/server.ts:44`. A pass buys a cosmetic track and a welcome reward; it is not a
+    // `emberkin/src/server.ts`. A pass buys a cosmetic track and a welcome reward; it is not a
     // slot and it is not a stat.
     for (const sku of SEASON_PASS_SKUS) {
       assert.deepEqual(wardrobeFrom([ent({ sku })]), [], `${sku} was offered as a wearable`)
@@ -265,7 +265,7 @@ describe('itemsForSlot', () => {
   })
 
   it('includes items that name NO slot, because the service accepts any owned item anywhere', () => {
-    // `emberkin/src/cosmetics.ts:41-51` validates the slot and the ownership independently.
+    // `emberkin/src/cosmetics.ts` validates the slot and the ownership independently.
     assert.deepEqual(itemsForSlot([anywhere], 'battle_intro'), [anywhere])
   })
 
@@ -275,7 +275,7 @@ describe('itemsForSlot', () => {
 })
 
 describe('isSeasonPass', () => {
-  it('matches both SKUs from server.ts:44', () => {
+  it('matches both SKUs from server.ts', () => {
     assert.equal(isSeasonPass('emberkin_season_pass'), true)
     assert.equal(isSeasonPass('season_pass'), true)
   })

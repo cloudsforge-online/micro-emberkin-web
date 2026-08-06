@@ -83,7 +83,7 @@ describe('the route declaration', () => {
     assert.equal(routeFor('/')?.protected, true)
     assert.equal(routeFor('/party')?.protected, true)
     assert.equal(routeFor('/wardrobe')?.protected, true)
-    // The dex is public because `GET /v1/content/dex` takes no principal (server.ts:431).
+    // The dex is public because `GET /v1/content/dex` takes no principal (server.ts).
     assert.equal(routeFor('/dex')?.protected, false)
     assert.equal(routeFor('/settings')?.protected, false)
   })

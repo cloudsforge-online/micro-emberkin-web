@@ -1,10 +1,10 @@
 /**
  * The one piece of engine arithmetic this client reproduces, and the reason it is exact.
  *
- * The save carries `currentHp` but not `maxHp` (`emberkin/src/engine/saves.ts:9-22`). Every input
+ * The save carries `currentHp` but not `maxHp` (`emberkin/src/engine/saves.ts`). Every input
  * to the derivation IS on the wire, though — `attunement`, `level` and `resonance` from the save,
  * `baseStats.hp` from the local content copy — so `maxHpOf` reproduces
- * `emberkin/src/engine/kin.ts:148-153` rather than estimating.
+ * `emberkin/src/engine/kin.ts` rather than estimating.
  *
  *     const raw = Math.trunc(((2 * b + iv) * this.level) / 100) + this.level + 10
  *     return Math.trunc(raw * this.resonanceStatMultiplier)
@@ -67,7 +67,7 @@ describe('maxHpOf', () => {
   })
 
   it('steps again at exactly 100, to 1.12 and not 1.06', () => {
-    // The service tests 100 BEFORE 25 (`kin.ts:143-146`), so 100 is 1.12.
+    // The service tests 100 BEFORE 25 (`kin.ts`), so 100 is 1.12.
     assert.equal(maxHpOf(45, kin(50, 0, 99)), 111)
     assert.equal(maxHpOf(45, kin(50, 0, 100)), 117) // trunc(105 * 1.12) = trunc(117.6)
   })

@@ -7,12 +7,12 @@
  * `kindred-resonance`'s client ran the whole battle engine in the browser
  * (`web/game/engine/battle.js`, 302 lines) and wrote the result to `localStorage`. Those files are
  * deleted here. `micro-emberkin` resolves a battle from the save's party plus a seed
- * (`emberkin/src/battles.ts:124-147`) and returns a log; the browser's job is to send an intent
+ * (`emberkin/src/battles.ts`) and returns a log; the browser's job is to send an intent
  * and animate the answer.
  *
  * Which raises the one interesting problem in the client: the engine is deterministic and the log
  * is a list of SENTENCES, not events. `emberkin/src/engine/battle.ts` pushes formatted lines
- * through a callback (`battles.ts:139`). So the renderer animates from the log, and the log is
+ * through a callback (`battles.ts`). So the renderer animates from the log, and the log is
  * prose. Two rules keep that honest:
  *
  *   1. The log is DISPLAYED verbatim. Every line the server wrote appears, in order, whether or
@@ -41,13 +41,13 @@ export type Intent =
 /**
  * Turn a chosen intent into the shape `POST /v1/saves/me/battles` accepts.
  *
- * `parseScript` at `emberkin/src/server.ts:498-515` accepts exactly six kinds (line 504) and picks
+ * `parseScript` at `emberkin/src/server.ts` accepts exactly six kinds (line 504) and picks
  * up `slot`, `move`, `item` and `index` when they are the right primitive type — silently dropping
  * anything else. Silently. So a field spelled wrong here does not fail loudly; it produces a
  * different battle. `test/battle.test.ts` asserts the emitted object key by key against that
  * parser's expectations for every intent, which is the only way that class of bug is caught.
  *
- * Note `art` carries no move id. `emberkin/src/battles.ts:74-75` maps it to the species' own
+ * Note `art` carries no move id. `emberkin/src/battles.ts` maps it to the species' own
  * `resonanceArt`, so a client that named a move here would be overridden or ignored — and a UI
  * that let the player pick which Art to use would be offering a choice the server does not have.
  */
@@ -72,7 +72,7 @@ export function toScript(intents: readonly Intent[]): ScriptAction[] {
   return intents.map(toScriptAction)
 }
 
-/** The six kinds, as the server enumerates them. `emberkin/src/server.ts:504`. */
+/** The six kinds, as the server enumerates them. `emberkin/src/server.ts`. */
 export const SCRIPT_KINDS: readonly ScriptActionKind[] = ['move', 'art', 'catch', 'flee', 'switch', 'item']
 
 /* ==================================================================== the encounter */
@@ -82,7 +82,7 @@ export const SCRIPT_KINDS: readonly ScriptActionKind[] = ['move', 'art', 'catch'
  *
  * This picks WHICH species and WHAT LEVEL to submit — and that is a client choice, which deserves
  * saying plainly: the server accepts whatever enemy party the client names
- * (`emberkin/src/server.ts:475-496` validates the shape, not the fairness). A client could submit
+ * (`emberkin/src/server.ts` validates the shape, not the fairness). A client could submit
  * a level-2 enemy every time. It would gain nothing worth having — there is no ladder, no reward
  * table and no economy attached to a wild win — and cheapening one's own single-player game is not
  * a threat model. What the server does defend is everything that matters: the player's own party
@@ -122,7 +122,7 @@ function pickLevel(entry: { species: string; levels: readonly number[] }, random
 /**
  * The enemy to submit for a wild encounter.
  *
- * `isWild: true` matters — `emberkin/src/battles.ts:135` passes it into `BattleSide`, and a wild
+ * `isWild: true` matters — `emberkin/src/battles.ts` passes it into `BattleSide`, and a wild
  * side is the only one that can be caught. Submitting a wild encounter as a trainer battle would
  * make the catch action silently do nothing.
  */
@@ -156,16 +156,16 @@ export type BattleCue =
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  * EVERY PHRASE BELOW WAS READ OUT OF `emberkin/src/engine/battle.ts`, NOT GUESSED.
  *
- *   'A critical hit!'                         battle.ts:283
- *   "It's super effective!"                   engine/typechart.ts:37, logged at battle.ts:285
- *   "It's not very effective..."              engine/typechart.ts:36
- *   'It has no effect...'                     engine/typechart.ts:35
- *   "It doesn't affect <name>..."             battle.ts:278
- *   'Gotcha! <name> resonates with you now.'  battle.ts:236
- *   '<name> fainted!'                         battle.ts:403
- *   '✦ <name> channels its Resonance Art — '  battle.ts:260
- *   '<name> used <move>!'                     battle.ts:262
- *   "<name>'s attack missed!"                 battle.ts:267
+ *   'A critical hit!'                         battle.ts
+ *   "It's super effective!"                   engine/typechart.ts, logged at battle.ts
+ *   "It's not very effective..."              engine/typechart.ts
+ *   'It has no effect...'                     engine/typechart.ts
+ *   "It doesn't affect <name>..."             battle.ts
+ *   'Gotcha! <name> resonates with you now.'  battle.ts
+ *   '<name> fainted!'                         battle.ts
+ *   '✦ <name> channels its Resonance Art — '  battle.ts
+ *   '<name> used <move>!'                     battle.ts
+ *   "<name>'s attack missed!"                 battle.ts
  *
  * The first draft of this function matched `'was caught'` and `'unleashes'`, neither of which the
  * engine ever writes — the catch would have animated nothing and the Art would have animated as an
@@ -176,7 +176,7 @@ export type BattleCue =
  * still displayed. Guessing would put a faint animation on a line about the weather.
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  *
- * Order is load-bearing. `'<side> used <item>. <name> recovered N HP.'` (battle.ts:201) also
+ * Order is load-bearing. `'<side> used <item>. <name> recovered N HP.'` (battle.ts) also
  * contains "used ", so the attack test requires the line to END in `!` — which move lines do and
  * item lines do not.
  */

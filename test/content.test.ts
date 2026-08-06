@@ -2,7 +2,7 @@
  * The content: the five requests, and the reconciliation between two copies of the truth.
  *
  * The canonical content is `micro-emberkin`'s. This bundle carries a RENDERING copy because the
- * service publishes only a four-field dex (`emberkin/src/server.ts:434`) and a client cannot draw
+ * service publishes only a four-field dex (`emberkin/src/server.ts`) and a client cannot draw
  * a creature from four fields. Two copies drift, so `reconcile` names every way they can, and each
  * way is a different problem with a different honest response.
  */

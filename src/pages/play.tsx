@@ -5,7 +5,7 @@
  * THE ONE THING TO UNDERSTAND ABOUT THIS SCREEN.
  *
  * It does not resolve a battle. It builds an INTENT — an enemy and a list of turns — posts it to
- * `POST /v1/saves/me/battles` (`emberkin/src/server.ts:345`) with an Idempotency-Key, and animates
+ * `POST /v1/saves/me/battles` (`emberkin/src/server.ts`) with an Idempotency-Key, and animates
  * the log that comes back. The engine is on the server, it is deterministic, and the same seed
  * produces the same log; so what this page plays is a recording, not a simulation.
  *
@@ -37,7 +37,7 @@ import type { BattleStage } from '../game/stage.ts'
 // From its own module, so asking the question does not statically import the renderer.
 import { webglAvailable } from '../game/webgl.ts'
 
-/** The turn limit submitted with a battle. `emberkin/src/server.ts:355`; the server's own default is 100. */
+/** The turn limit submitted with a battle. `emberkin/src/server.ts`; the server's own default is 100. */
 const MAX_TURNS = 24
 
 export function PlayPage() {
@@ -162,7 +162,7 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
     const before = state
     try {
       // A FRESH key per submission. The key expresses "this attack, once": a network retry of THIS
-      // call replays the recorded battle (`emberkin/src/battles.ts:108-114`), while a second,
+      // call replays the recorded battle (`emberkin/src/battles.ts`), while a second,
       // identical attack a minute later is a second battle and gets its own key. Deriving the key
       // from the body would silently merge the two, and the player would watch the second attack
       // do nothing at all.
@@ -175,7 +175,7 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
       setResult(outcome)
 
       // The party is re-read from the SERVICE rather than patched locally. The battle route
-      // rewrites party, box and dexSeen (`emberkin/src/battles.ts:184-191`) and the response
+      // rewrites party, box and dexSeen (`emberkin/src/battles.ts`) and the response
       // carries none of them — only the log. A client that guessed at the new party would be
       // showing numbers the server never agreed to.
       const machine = await loadSave()

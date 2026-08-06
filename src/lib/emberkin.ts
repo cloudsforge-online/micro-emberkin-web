@@ -16,16 +16,16 @@
  * and `test/emberkin-routes.test.ts` asserts that the claim is spelled the way the route table
  * compiles it. The routes were read at `emberkin` commit — see README — and the whole table is:
  *
- *   GET  /livez                        server.ts:238
- *   GET  /readyz                       server.ts:240
- *   GET  /metrics                      server.ts:245
- *   POST /v1/events                    server.ts:256   webhook; signature-checked, NOT for a browser
- *   POST /v1/saves                     server.ts:322
- *   GET  /v1/saves/me                  server.ts:338
- *   POST /v1/saves/me/battles          server.ts:345
- *   PUT  /v1/saves/me/cosmetics        server.ts:392
- *   GET  /v1/saves/me/achievements     server.ts:409
- *   GET  /v1/content/dex               server.ts:431
+ *   GET  /livez                        server.ts
+ *   GET  /readyz                       server.ts
+ *   GET  /metrics                      server.ts
+ *   POST /v1/events                    server.ts   webhook; signature-checked, NOT for a browser
+ *   POST /v1/saves                     server.ts
+ *   GET  /v1/saves/me                  server.ts
+ *   POST /v1/saves/me/battles          server.ts
+ *   PUT  /v1/saves/me/cosmetics        server.ts
+ *   GET  /v1/saves/me/achievements     server.ts
+ *   GET  /v1/content/dex               server.ts
  *
  * There are ten routes and there is no eleventh. In particular there is NO route that writes
  * `currentRegion`, `storyProgress`, `playtimeSeconds`, `inventory` or `seals`, and no route that
@@ -41,23 +41,23 @@ import { ApiError, emberkin } from './api.ts'
 /**
  * One Kin at rest, exactly as `serializeSave` puts it on the wire.
  *
- * `emberkin/src/engine/saves.ts:9-22` (`KinSave`), reached through
- * `emberkin/src/server.ts:517-533` (`serializeSave`), which passes `save.party` and `save.box`
+ * `emberkin/src/engine/saves.ts` (`KinSave`), reached through
+ * `emberkin/src/server.ts` (`serializeSave`), which passes `save.party` and `save.box`
  * through untouched.
  *
- * `sync` is deliberately absent: `emberkin/src/engine/kin.ts:36` documents it as "resets each
- * battle" and `kinToSave` (`engine/saves.ts:24-37`) does not persist it. A party screen therefore
+ * `sync` is deliberately absent: `emberkin/src/engine/kin.ts` documents it as "resets each
+ * battle" and `kinToSave` (`engine/saves.ts`) does not persist it. A party screen therefore
  * cannot show a Sync value, and must not invent one — see `resonance.ts`.
  */
 export interface KinSave {
   readonly speciesId: string
-  /** null means "follows the species name" — `engine/saves.ts:11`. Not "unknown". */
+  /** null means "follows the species name" — `engine/saves.ts`. Not "unknown". */
   readonly nickname: string | null
   readonly level: number
   readonly xp: number
-  /** 0..100, persistent. `engine/kin.ts:34`. */
+  /** 0..100, persistent. `engine/kin.ts`. */
   readonly resonance: number
-  /** -100 (Harmony) .. +100 (Ferocity). `engine/kin.ts:35`. */
+  /** -100 (Harmony) .. +100 (Ferocity). `engine/kin.ts`. */
   readonly temperament: number
   readonly attunement: Readonly<Record<string, number>>
   readonly moves: readonly string[]
@@ -69,7 +69,7 @@ export interface KinSave {
 /**
  * The save, as `GET /v1/saves/me` and `POST /v1/saves` return it.
  *
- * Field for field `emberkin/src/server.ts:517-533`. `seed` is a STRING there
+ * Field for field `emberkin/src/server.ts`. `seed` is a STRING there
  * (`save.seed.toString()`, line 521) because it is a ulong that does not survive a JSON number,
  * and it stays a string here for the same reason.
  */
@@ -89,7 +89,7 @@ export interface SaveState {
   readonly saveVersion: number
 }
 
-/** One member of a submitted enemy party. `emberkin/src/server.ts:482-494` (`parseEnemy`). */
+/** One member of a submitted enemy party. `emberkin/src/server.ts` (`parseEnemy`). */
 export interface KinSpec {
   readonly species: string
   readonly level: number
@@ -98,7 +98,7 @@ export interface KinSpec {
   readonly nickname?: string
 }
 
-/** The enemy a battle is submitted against. `emberkin/src/server.ts:475-496`. */
+/** The enemy a battle is submitted against. `emberkin/src/server.ts`. */
 export interface EnemySpec {
   /** Defaults to 'Wild' server-side (line 478) — sent explicitly so the log names it. */
   readonly name: string
@@ -109,9 +109,9 @@ export interface EnemySpec {
 /**
  * One submitted turn.
  *
- * The six kinds are enumerated at `emberkin/src/server.ts:504`; anything else is a 400. `art` is
+ * The six kinds are enumerated at `emberkin/src/server.ts`; anything else is a 400. `art` is
  * the Resonance Art, which the server maps to the species' own art
- * (`emberkin/src/battles.ts:74-75`) rather than to a move the client names.
+ * (`emberkin/src/battles.ts`) rather than to a move the client names.
  */
 export type ScriptActionKind = 'move' | 'art' | 'catch' | 'flee' | 'switch' | 'item'
 
@@ -123,7 +123,7 @@ export interface ScriptAction {
   readonly index?: number
 }
 
-/** What `POST /v1/saves/me/battles` answers. `emberkin/src/server.ts:379-389`. */
+/** What `POST /v1/saves/me/battles` answers. `emberkin/src/server.ts`. */
 export interface BattleResult {
   readonly battleId: string
   /** `Ongoing | Victory | Defeat | Caught | Fled` — `emberkin/src/engine/battletypes.ts`. */
@@ -141,17 +141,17 @@ export interface UnlockedAchievement {
   readonly points: number
 }
 
-/** One row of `GET /v1/saves/me/achievements`. `emberkin/src/server.ts:418-424`. */
+/** One row of `GET /v1/saves/me/achievements`. `emberkin/src/server.ts`. */
 export interface AchievementRow {
   readonly code: string
   readonly name: string
   readonly points: number
   readonly unlockedAt: string
-  /** Whether worlds has taken delivery of the badge. `server.ts:423` — `delivered_at !== null`. */
+  /** Whether worlds has taken delivery of the badge. `server.ts` — `delivered_at !== null`. */
   readonly delivered: boolean
 }
 
-/** One row of `GET /v1/content/dex`. `emberkin/src/server.ts:434`. */
+/** One row of `GET /v1/content/dex`. `emberkin/src/server.ts`. */
 export interface DexEntry {
   readonly id: string
   readonly dexNumber: number
@@ -164,14 +164,14 @@ export interface DexEntry {
 /**
  * Start a new game.
  *
- * `POST /v1/saves` — `emberkin/src/server.ts:322`.
+ * `POST /v1/saves` — `emberkin/src/server.ts`.
  *
  * Body: `wardenName` and `starter` are required strings (`requireString`, lines 325-326, throwing
- * a 400 on an empty or non-string field via `server.ts:459-463`). `seed` is optional and must be a
- * DECIMAL STRING, not a number: `readOptionalSeed` (`server.ts:465-473`) tests it against
+ * a 400 on an empty or non-string field via `server.ts`). `seed` is optional and must be a
+ * DECIMAL STRING, not a number: `readOptionalSeed` (`server.ts`) tests it against
  * `/^\d{1,20}$/` and rejects anything else, because a ulong seed does not survive a JSON number.
  *
- * Answers **201 when it created a save and 200 when one already existed** (`server.ts:335`), and
+ * Answers **201 when it created a save and 200 when one already existed** (`server.ts`), and
  * both carry the save. It is therefore idempotent by design: a returning player who hits "new
  * game" is handed their existing save rather than a fresh one, and nothing is overwritten.
  *
@@ -195,7 +195,7 @@ export function startGame(input: { wardenName: string; starter: string; seed?: s
 /**
  * The signed-in account's save, or `null` when it has none.
  *
- * `GET /v1/saves/me` — `emberkin/src/server.ts:338`.
+ * `GET /v1/saves/me` — `emberkin/src/server.ts`.
  *
  * A 404 here is NOT an error state. Line 341 returns `not_found` with "no save for this account"
  * for a player who has never started a game, which is the ordinary first visit. Mapping it to
@@ -214,24 +214,24 @@ export async function fetchSave(): Promise<SaveState | null> {
 /**
  * Submit a battle and receive the resolved result.
  *
- * `POST /v1/saves/me/battles` — `emberkin/src/server.ts:345`.
+ * `POST /v1/saves/me/battles` — `emberkin/src/server.ts`.
  *
  * ## The client is not authoritative
  * The submission names an ENEMY and a SCRIPT of intents. The server restores the player's party
  * from the authoritative save, rolls the enemy from the seed, runs the deterministic engine and
- * returns the log (`emberkin/src/battles.ts:124-147`). Nothing this client computes affects the
+ * returns the log (`emberkin/src/battles.ts`). Nothing this client computes affects the
  * outcome, and the party it renders afterwards is the server's, re-read from the save.
  *
  * ## The Idempotency-Key is mandatory
- * `server.ts:347-350` rejects a submission without one with a 400, and the recorded battle is
+ * `server.ts` rejects a submission without one with a 400, and the recorded battle is
  * keyed on `(user, key)` so that a retry REPLAYS rather than resolving — and double-applying — a
- * second battle (`battles.ts:108-114`). The caller supplies the key and must reuse the SAME key
+ * second battle (`battles.ts`). The caller supplies the key and must reuse the SAME key
  * when retrying the same intent; `newIdempotencyKey()` below exists so that "the same intent"
  * is a decision the caller makes once, deliberately.
  *
  * ## `seed` is a string
- * Same `readOptionalSeed` as `startGame` (`server.ts:354`, `465-473`). Omitted, the server uses
- * the save's own seed (`battles.ts:121`).
+ * Same `readOptionalSeed` as `startGame` (`server.ts`, `465-473`). Omitted, the server uses
+ * the save's own seed (`battles.ts`).
  */
 export function submitBattle(
   idempotencyKey: string,
@@ -252,21 +252,21 @@ export function submitBattle(
 /**
  * Equip a cosmetic, or clear a slot.
  *
- * `PUT /v1/saves/me/cosmetics` — `emberkin/src/server.ts:392`.
+ * `PUT /v1/saves/me/cosmetics` — `emberkin/src/server.ts`.
  *
  * Body is `{slot, itemUrn}` where `itemUrn` is a string OR **explicitly null** to clear the slot;
- * `undefined` is a 400 (`server.ts:396-397`). So `null` is sent as `null` and never omitted — the
+ * `undefined` is a 400 (`server.ts`). So `null` is sent as `null` and never omitted — the
  * usual "drop undefined fields" spread would turn "take this off" into a bad request.
  *
  * ## This write fails CLOSED
- * `server.ts:221-223` maps a billing outage to **503 `entitlements_unavailable`** — "ask again
+ * `server.ts` maps a billing outage to **503 `entitlements_unavailable`** — "ask again
  * later", never "wear it anyway" — and an unowned item to **403 `cosmetic_not_owned`**
- * (`server.ts:210-212`, which also increments `emberkin_cosmetic_refusals_total`; a non-zero
+ * (`server.ts`, which also increments `emberkin_cosmetic_refusals_total`; a non-zero
  * counter means a client believes it may equip something it does not own). Both are surfaced to
  * the player as themselves. Neither is retried automatically.
  *
  * ## And it can never change a stat
- * By construction, not by promise: `emberkin/src/cosmetics.ts:52-77` writes only
+ * By construction, not by promise: `emberkin/src/cosmetics.ts` writes only
  * `saves.equipped_cosmetics`, and the engine reads stats from species base stats, per-instance
  * Attunement and Resonance — none of which a cosmetic can reach. `entitlements.ts` in this
  * repository holds the client half of that rule.
@@ -281,7 +281,7 @@ export function equipCosmetic(slot: string, itemUrn: string | null): Promise<{ e
 /**
  * The account's unlocked achievements, newest first.
  *
- * `GET /v1/saves/me/achievements` — `emberkin/src/server.ts:409`. Ordering is the server's
+ * `GET /v1/saves/me/achievements` — `emberkin/src/server.ts`. Ordering is the server's
  * (`order by unlocked_at desc`, line 413) and is not re-sorted here.
  */
 export async function fetchAchievements(): Promise<readonly AchievementRow[]> {
@@ -296,7 +296,7 @@ export async function fetchAchievements(): Promise<readonly AchievementRow[]> {
 /**
  * The canonical dex: every species the SERVICE knows.
  *
- * `GET /v1/content/dex` — `emberkin/src/server.ts:431`.
+ * `GET /v1/content/dex` — `emberkin/src/server.ts`.
  *
  * It returns `{id, dexNumber, name, types}` and nothing else (line 434) — no base stats, no
  * learnsets, no visual spec. Those live in this repository's carried-forward `public/game/data`,
@@ -314,7 +314,7 @@ export async function fetchDex(): Promise<readonly DexEntry[]> {
 /**
  * Is the service ready?
  *
- * `GET /readyz` — `emberkin/src/server.ts:240`, which answers **503 with a body** when it is not
+ * `GET /readyz` — `emberkin/src/server.ts`, which answers **503 with a body** when it is not
  * (line 242). Used only by the degradation banner, so a 503 is a report rather than a throw.
  */
 export async function fetchReadiness(): Promise<{ ready: boolean }> {

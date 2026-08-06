@@ -19,13 +19,13 @@
  *
  * A route string here is a claim about a specific line of another repository. The claims:
  *
- *   POST /v1/saves                  server.ts:322
- *   GET  /v1/saves/me               server.ts:338
- *   POST /v1/saves/me/battles       server.ts:345
- *   PUT  /v1/saves/me/cosmetics     server.ts:392
- *   GET  /v1/saves/me/achievements  server.ts:409
- *   GET  /v1/content/dex            server.ts:431
- *   GET  /readyz                    server.ts:240
+ *   POST /v1/saves                  server.ts
+ *   GET  /v1/saves/me               server.ts
+ *   POST /v1/saves/me/battles       server.ts
+ *   PUT  /v1/saves/me/cosmetics     server.ts
+ *   GET  /v1/saves/me/achievements  server.ts
+ *   GET  /v1/content/dex            server.ts
+ *   GET  /readyz                    server.ts
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  */
 import assert from 'node:assert/strict'
@@ -44,7 +44,7 @@ import {
 } from '../src/lib/emberkin.ts'
 import { ApiError } from '../src/lib/api.ts'
 
-/** The dev-port base every call must land on. `emberkin/src/env.ts:121` — PORT default 4100. */
+/** The dev-port base every call must land on. `emberkin/src/env.ts` — PORT default 4100. */
 const BASE = 'http://localhost:4100'
 
 let stub: ReturnType<typeof installFetch>
@@ -96,7 +96,7 @@ describe('every request goes to micro-emberkin', () => {
   })
 
   it('does NOT carry a token on the public dex route', async () => {
-    // `emberkin/src/server.ts:431` takes no principal — the handler destructures `_ctx`. Sending
+    // `emberkin/src/server.ts` takes no principal — the handler destructures `_ctx`. Sending
     // a token to a public route is not a failure, but it is a needless credential on the wire.
     stub = installFetch(() => json(200, { dex: [] }))
     await fetchDex()
@@ -106,7 +106,7 @@ describe('every request goes to micro-emberkin', () => {
 
 /* ==================================================================== POST /v1/saves */
 
-describe('startGame — POST /v1/saves (server.ts:322)', () => {
+describe('startGame — POST /v1/saves (server.ts)', () => {
   it('posts to exactly /v1/saves', async () => {
     stub = installFetch(() => json(201, saveBody()))
     await startGame({ wardenName: 'Ash', starter: 'cindercub' })
@@ -117,7 +117,7 @@ describe('startGame — POST /v1/saves (server.ts:322)', () => {
   it('sends wardenName and starter, the two fields requireString demands', async () => {
     stub = installFetch(() => json(201, saveBody()))
     await startGame({ wardenName: 'Ash', starter: 'cindercub' })
-    // `server.ts:325-326` — requireString(body, 'wardenName') and requireString(body, 'starter').
+    // `server.ts` — requireString(body, 'wardenName') and requireString(body, 'starter').
     assert.deepEqual(bodyOf(lastCall()), { wardenName: 'Ash', starter: 'cindercub' })
   })
 
@@ -131,7 +131,7 @@ describe('startGame — POST /v1/saves (server.ts:322)', () => {
     stub = installFetch(() => json(201, saveBody()))
     await startGame({ wardenName: 'Ash', starter: 'cindercub', seed: '12345678901234567890' })
     const body = bodyOf(lastCall())
-    // `server.ts:465-473`: a seed must match /^\d{1,20}$/ AS A STRING. A JSON number would be a
+    // `server.ts`: a seed must match /^\d{1,20}$/ AS A STRING. A JSON number would be a
     // 400 here, and worse, would silently lose precision above 2^53 before it ever left.
     assert.equal(typeof body['seed'], 'string')
     assert.equal(body['seed'], '12345678901234567890')
@@ -154,7 +154,7 @@ describe('startGame — POST /v1/saves (server.ts:322)', () => {
 
 /* ==================================================================== GET /v1/saves/me */
 
-describe('fetchSave — GET /v1/saves/me (server.ts:338)', () => {
+describe('fetchSave — GET /v1/saves/me (server.ts)', () => {
   it('gets exactly /v1/saves/me', async () => {
     stub = installFetch(() => json(200, saveBody()))
     await fetchSave()
@@ -168,7 +168,7 @@ describe('fetchSave — GET /v1/saves/me (server.ts:338)', () => {
     assert.equal(lastCall().body, undefined)
   })
 
-  it('maps the 404 at server.ts:341 to null, not to an error', async () => {
+  it('maps the 404 at server.ts to null, not to an error', async () => {
     // "no save for this account" is what a first-time player gets. Treating it as a failure would
     // show them an error instead of a title screen.
     stub = installFetch(() => json(404, { error: { code: 'not_found', message: 'no save for this account' } }))
@@ -180,7 +180,7 @@ describe('fetchSave — GET /v1/saves/me (server.ts:338)', () => {
     await assert.rejects(() => fetchSave(), (err: unknown) => err instanceof ApiError && err.status === 500)
   })
 
-  it('keeps seed a string, because it is a ulong (server.ts:521)', async () => {
+  it('keeps seed a string, because it is a ulong (server.ts)', async () => {
     stub = installFetch(() => json(200, saveBody({ seed: '18446744073709551615' })))
     const save = await fetchSave()
     assert.equal(save?.seed, '18446744073709551615')
@@ -191,7 +191,7 @@ describe('fetchSave — GET /v1/saves/me (server.ts:338)', () => {
 
 /* ==================================================================== POST battles */
 
-describe('submitBattle — POST /v1/saves/me/battles (server.ts:345)', () => {
+describe('submitBattle — POST /v1/saves/me/battles (server.ts)', () => {
   const enemy = { name: 'Wild', isWild: true, party: [{ species: 'coalcrawl', level: 4 }] }
 
   it('posts to exactly /v1/saves/me/battles', async () => {
@@ -201,7 +201,7 @@ describe('submitBattle — POST /v1/saves/me/battles (server.ts:345)', () => {
     assert.equal(lastCall().method, 'POST')
   })
 
-  it('SENDS THE IDEMPOTENCY-KEY HEADER — server.ts:347-350 is a 400 without it', async () => {
+  it('SENDS THE IDEMPOTENCY-KEY HEADER — server.ts is a 400 without it', async () => {
     stub = installFetch(() => json(200, battleBody()))
     await submitBattle('key-abc', { enemy })
     assert.equal(lastCall().headers['idempotency-key'], 'key-abc')
@@ -232,12 +232,12 @@ describe('submitBattle — POST /v1/saves/me/battles (server.ts:345)', () => {
     stub = installFetch(() => json(200, battleBody()))
     await submitBattle('k', { enemy })
     const body = bodyOf(lastCall())
-    // `server.ts:475-496`: name (string), isWild (=== true), party (non-empty array of
+    // `server.ts`: name (string), isWild (=== true), party (non-empty array of
     // {species: string, level: number}).
     assert.deepEqual(body['enemy'], enemy)
   })
 
-  it('sends isWild as a real boolean — server.ts:479 tests `=== true`', async () => {
+  it('sends isWild as a real boolean — server.ts tests `=== true`', async () => {
     stub = installFetch(() => json(200, battleBody()))
     await submitBattle('k', { enemy })
     const sent = (bodyOf(lastCall())['enemy'] as { isWild: unknown }).isWild
@@ -262,7 +262,7 @@ describe('submitBattle — POST /v1/saves/me/battles (server.ts:345)', () => {
     ])
   })
 
-  it('sends maxTurns as a number — server.ts:355 tests typeof === number', async () => {
+  it('sends maxTurns as a number — server.ts tests typeof === number', async () => {
     stub = installFetch(() => json(200, battleBody()))
     await submitBattle('k', { enemy, maxTurns: 24 })
     assert.strictEqual(bodyOf(lastCall())['maxTurns'], 24)
@@ -295,7 +295,7 @@ describe('newIdempotencyKey', () => {
     assert.equal(keys.size, 200)
   })
 
-  it('fits the 1..200 character bound server.ts:348 enforces', () => {
+  it('fits the 1..200 character bound server.ts enforces', () => {
     const key = newIdempotencyKey()
     assert.ok(key.length >= 1 && key.length <= 200, `key length ${key.length} is out of range`)
   })
@@ -303,7 +303,7 @@ describe('newIdempotencyKey', () => {
 
 /* ==================================================================== PUT cosmetics */
 
-describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts:392)', () => {
+describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts)', () => {
   it('PUTs to exactly /v1/saves/me/cosmetics', async () => {
     stub = installFetch(() => json(200, { equippedCosmetics: {} }))
     await equipCosmetic('frame', 'ember_frame')
@@ -317,7 +317,7 @@ describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts:392)', () => {
     assert.deepEqual(bodyOf(lastCall()), { slot: 'frame', itemUrn: 'ember_frame' })
   })
 
-  it('SENDS null EXPLICITLY to clear a slot — undefined is a 400 at server.ts:396-397', async () => {
+  it('SENDS null EXPLICITLY to clear a slot — undefined is a 400 at server.ts', async () => {
     stub = installFetch(() => json(200, { equippedCosmetics: {} }))
     await equipCosmetic('frame', null)
     const body = bodyOf(lastCall())
@@ -331,7 +331,7 @@ describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts:392)', () => {
     assert.deepEqual(answer.equippedCosmetics, { frame: 'a', hud: 'b' })
   })
 
-  it('surfaces the 403 cosmetic_not_owned with its code (server.ts:210-212)', async () => {
+  it('surfaces the 403 cosmetic_not_owned with its code (server.ts)', async () => {
     stub = installFetch(() =>
       json(403, { error: { code: 'cosmetic_not_owned', message: "account does not own cosmetic 'x'", requestId: 'r-9' } }),
     )
@@ -342,7 +342,7 @@ describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts:392)', () => {
     )
   })
 
-  it('surfaces the 503 entitlements_unavailable — the write FAILS CLOSED (server.ts:221-223)', async () => {
+  it('surfaces the 503 entitlements_unavailable — the write FAILS CLOSED (server.ts)', async () => {
     stub = installFetch(() => json(503, { error: { code: 'entitlements_unavailable', message: 'try again' } }))
     await assert.rejects(
       () => equipCosmetic('frame', 'x'),
@@ -353,14 +353,14 @@ describe('equipCosmetic — PUT /v1/saves/me/cosmetics (server.ts:392)', () => {
 
 /* ==================================================================== achievements + dex */
 
-describe('fetchAchievements — GET /v1/saves/me/achievements (server.ts:409)', () => {
+describe('fetchAchievements — GET /v1/saves/me/achievements (server.ts)', () => {
   it('gets exactly that path', async () => {
     stub = installFetch(() => json(200, { achievements: [] }))
     await fetchAchievements()
     assert.equal(lastCall().url, `${BASE}/v1/saves/me/achievements`)
   })
 
-  it('unwraps the `achievements` key the handler wraps them in (server.ts:417)', async () => {
+  it('unwraps the `achievements` key the handler wraps them in (server.ts)', async () => {
     const rows = [{ code: 'a', name: 'A', points: 1, unlockedAt: '2026-01-01T00:00:00.000Z', delivered: false }]
     stub = installFetch(() => json(200, { achievements: rows }))
     assert.deepEqual(await fetchAchievements(), rows)
@@ -377,14 +377,14 @@ describe('fetchAchievements — GET /v1/saves/me/achievements (server.ts:409)', 
   })
 })
 
-describe('fetchDex — GET /v1/content/dex (server.ts:431)', () => {
+describe('fetchDex — GET /v1/content/dex (server.ts)', () => {
   it('gets exactly /v1/content/dex', async () => {
     stub = installFetch(() => json(200, { dex: [] }))
     await fetchDex()
     assert.equal(lastCall().url, `${BASE}/v1/content/dex`)
   })
 
-  it('unwraps the `dex` key (server.ts:433)', async () => {
+  it('unwraps the `dex` key (server.ts)', async () => {
     const dex = [{ id: 'cindercub', dexNumber: 1, name: 'Cindercub', types: ['ember'] }]
     stub = installFetch(() => json(200, { dex }))
     assert.deepEqual(await fetchDex(), dex)
@@ -398,7 +398,7 @@ describe('fetchDex — GET /v1/content/dex (server.ts:431)', () => {
 
 /* ==================================================================== readyz */
 
-describe('fetchReadiness — GET /readyz (server.ts:240)', () => {
+describe('fetchReadiness — GET /readyz (server.ts)', () => {
   it('gets /readyz, unauthenticated', async () => {
     stub = installFetch(() => json(200, { ready: true }))
     await fetchReadiness()
@@ -411,7 +411,7 @@ describe('fetchReadiness — GET /readyz (server.ts:240)', () => {
     assert.deepEqual(await fetchReadiness(), { ready: true })
   })
 
-  it('reads the 503 body as not-ready rather than throwing (server.ts:242)', async () => {
+  it('reads the 503 body as not-ready rather than throwing (server.ts)', async () => {
     stub = installFetch(() => json(503, { ready: false, checks: [] }))
     assert.deepEqual(await fetchReadiness(), { ready: false })
   })

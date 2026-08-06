@@ -2,7 +2,7 @@
  * Building the intent, and reading the log back.
  *
  * `toScriptAction` is the one place a client mistake becomes a DIFFERENT BATTLE rather than an
- * error: `parseScript` at `emberkin/src/server.ts:498-515` picks up `slot`, `move`, `item` and
+ * error: `parseScript` at `emberkin/src/server.ts` picks up `slot`, `move`, `item` and
  * `index` when they are the right primitive type and SILENTLY DROPS anything else. A field spelled
  * wrong here does not fail loudly; it resolves a battle nobody asked for. So every intent's emitted
  * object is asserted key by key.
@@ -27,8 +27,8 @@ import {
 } from '../src/lib/battle.ts'
 import type { Region } from '../src/lib/content.ts'
 
-describe('toScriptAction — against parseScript (server.ts:498-515)', () => {
-  it('emits only kinds the server enumerates at server.ts:504', () => {
+describe('toScriptAction — against parseScript (server.ts)', () => {
+  it('emits only kinds the server enumerates at server.ts', () => {
     const intents: Intent[] = [
       { kind: 'move', moveId: 'ember_scratch' },
       { kind: 'art' },
@@ -47,7 +47,7 @@ describe('toScriptAction — against parseScript (server.ts:498-515)', () => {
   })
 
   it('sends a move as {kind:"move", move:<id>} — the key is `move`, not `moveId`', () => {
-    // `server.ts:510` reads `s['move']`. `moveId` would be dropped in silence and the server would
+    // `server.ts` reads `s['move']`. `moveId` would be dropped in silence and the server would
     // fall back to `active.moves[slot ?? 0]` — a different attack, every turn, with no error.
     assert.deepEqual(toScriptAction({ kind: 'move', moveId: 'flame_fang' }), {
       kind: 'move',
@@ -56,13 +56,13 @@ describe('toScriptAction — against parseScript (server.ts:498-515)', () => {
   })
 
   it('sends an art with NO move id', () => {
-    // `emberkin/src/battles.ts:74-75` maps `art` to the species' own `resonanceArt`. Naming a move
+    // `emberkin/src/battles.ts` maps `art` to the species' own `resonanceArt`. Naming a move
     // here would be offering the player a choice the server does not have.
     assert.deepEqual(toScriptAction({ kind: 'art' }), { kind: 'art' })
   })
 
   it('sends a catch as {kind:"catch", item:<id>} — the key is `item`, not `itemId`', () => {
-    // `server.ts:511` reads `s['item']`; `battles.ts:78` defaults to 'resonator' when it is absent,
+    // `server.ts` reads `s['item']`; `battles.ts` defaults to 'resonator' when it is absent,
     // so a wrong key would silently downgrade a Master Resonator to a basic one.
     assert.deepEqual(toScriptAction({ kind: 'catch', itemId: 'master_resonator' }), {
       kind: 'catch',
@@ -75,7 +75,7 @@ describe('toScriptAction — against parseScript (server.ts:498-515)', () => {
   })
 
   it('sends a switch as {kind:"switch", index:<n>} — a NUMBER', () => {
-    // `server.ts:512` tests `typeof s['index'] === 'number'`; `battles.ts:82` defaults to -1, which
+    // `server.ts` tests `typeof s['index'] === 'number'`; `battles.ts` defaults to -1, which
     // is not a slot. A string index would silently become "switch to nothing".
     const action = toScriptAction({ kind: 'switch', index: 2 })
     assert.deepEqual(action, { kind: 'switch', index: 2 })
@@ -124,12 +124,12 @@ describe('toScriptAction — against parseScript (server.ts:498-515)', () => {
 
 describe('wildEnemy', () => {
   it('sets isWild true, which is what makes a catch possible at all', () => {
-    // `emberkin/src/battles.ts:135` passes it to BattleSide; only a wild side can be caught.
+    // `emberkin/src/battles.ts` passes it to BattleSide; only a wild side can be caught.
     const enemy = wildEnemy({ species: 'coalcrawl', level: 5 })
     assert.strictEqual(enemy.isWild, true)
   })
 
-  it('sends a non-empty party — server.ts:481 rejects an empty one with a 400', () => {
+  it('sends a non-empty party — server.ts rejects an empty one with a 400', () => {
     assert.equal(wildEnemy({ species: 'coalcrawl', level: 5 }).party.length, 1)
   })
 
@@ -196,16 +196,16 @@ describe('rollEncounter', () => {
 
 describe('cueFor — phrases read out of emberkin/src/engine/battle.ts', () => {
   const cases: readonly [string, string, string][] = [
-    ['A critical hit!', 'critical', 'battle.ts:283'],
-    ['Gotcha! Coalcrawl resonates with you now.', 'catch', 'battle.ts:236'],
-    ['Coalcrawl fainted!', 'faint', 'battle.ts:403'],
-    ["It's super effective!", 'effective', 'typechart.ts:37'],
-    ["It's not very effective...", 'effective', 'typechart.ts:36'],
-    ['It has no effect...', 'no-effect', 'typechart.ts:35'],
-    ["It doesn't affect Coalcrawl...", 'no-effect', 'battle.ts:278'],
-    ["Cindercub's attack missed!", 'miss', 'battle.ts:267'],
-    ['✦ Cindercub channels its Resonance Art — Cinder Nova!', 'art', 'battle.ts:260'],
-    ['Cindercub used Ember Scratch!', 'attack', 'battle.ts:262'],
+    ['A critical hit!', 'critical', 'battle.ts'],
+    ['Gotcha! Coalcrawl resonates with you now.', 'catch', 'battle.ts'],
+    ['Coalcrawl fainted!', 'faint', 'battle.ts'],
+    ["It's super effective!", 'effective', 'typechart.ts'],
+    ["It's not very effective...", 'effective', 'typechart.ts'],
+    ['It has no effect...', 'no-effect', 'typechart.ts'],
+    ["It doesn't affect Coalcrawl...", 'no-effect', 'battle.ts'],
+    ["Cindercub's attack missed!", 'miss', 'battle.ts'],
+    ['✦ Cindercub channels its Resonance Art — Cinder Nova!', 'art', 'battle.ts'],
+    ['Cindercub used Ember Scratch!', 'attack', 'battle.ts'],
   ]
 
   it('reads every one of the engine’s own lines', () => {
@@ -221,7 +221,7 @@ describe('cueFor — phrases read out of emberkin/src/engine/battle.ts', () => {
   })
 
   it('does NOT read an item use as an attack, though both contain "used "', () => {
-    // `battle.ts:201` — "<side> used Potion. <name> recovered 40 HP." The attack test requires the
+    // `battle.ts` — "<side> used Potion. <name> recovered 40 HP." The attack test requires the
     // line to END in `!`, which move lines do and item lines do not.
     assert.equal(cueFor('Ash used Potion. Cindercub recovered 40 HP.'), null)
     assert.equal(cueFor("Ash used Salve. Cindercub's Burn was cured."), null)

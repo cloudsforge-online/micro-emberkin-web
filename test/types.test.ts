@@ -81,7 +81,7 @@ describe('THE ELEMENT HUES ARE ART DIRECTION, NOT AN INTERFACE PALETTE', () => {
   })
 
   /**
-   * `ui/packages/ui/src/tokens.css:211-218` — the eight validated categorical slots, whose stated
+   * `ui/packages/ui/src/tokens.css` — the eight validated categorical slots, whose stated
    * guarantee is ADJACENT separation, "assigned in this order and NEVER cycled". Its worst
    * adjacent pair is the bar this measures against.
    */
