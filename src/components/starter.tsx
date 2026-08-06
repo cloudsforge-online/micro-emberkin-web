@@ -1,9 +1,9 @@
 /**
  * The first screen: naming yourself, and choosing the Kin you begin with.
  *
- * This is the only place `POST /v1/saves` (`emberkin/src/server.ts:322`) is called, and the route
+ * This is the only place `POST /v1/saves` (`emberkin/src/server.ts`) is called, and the route
  * is IDEMPOTENT — it answers 200 with the existing save rather than overwriting one
- * (`server.ts:335`). So this screen cannot destroy a game, and it does not need a confirmation
+ * (`server.ts`). So this screen cannot destroy a game, and it does not need a confirmation
  * dialogue pretending it might.
  *
  * The starters come from `campaign.json`'s own `starters` array, so the three offered are the

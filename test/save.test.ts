@@ -7,8 +7,8 @@
  * progress was gone, and that is a lie the app told first.
  *
  * The diff exists because the battle response carries a LOG and no party
- * (`emberkin/src/server.ts:379-389`), while the battle route rewrites party, box and dexSeen
- * (`emberkin/src/battles.ts:184-191`). So "what changed" is the difference between two saves the
+ * (`emberkin/src/server.ts`), while the battle route rewrites party, box and dexSeen
+ * (`emberkin/src/battles.ts`). So "what changed" is the difference between two saves the
  * SERVER produced, never a number parsed out of prose.
  */
 import assert from 'node:assert/strict'
@@ -122,7 +122,7 @@ describe('beginGame', () => {
   })
 
   it('reports created:false from a `present` machine — the route is idempotent', async () => {
-    // `emberkin/src/server.ts:335` answers 200 with the existing save. Nothing is overwritten, and
+    // `emberkin/src/server.ts` answers 200 with the existing save. Nothing is overwritten, and
     // "created" must not claim otherwise.
     stub = installFetch(() => json(200, save()))
     const prior: SaveMachine = { status: 'present', save: save() }

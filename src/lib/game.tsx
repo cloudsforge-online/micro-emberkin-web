@@ -5,8 +5,8 @@
  * FOUR SOURCES, LOADED INDEPENDENTLY, FAILING INDEPENDENTLY.
  *
  *   content       static JSON on our own origin           /game/data/*.json
- *   save          micro-emberkin, authenticated           GET /v1/saves/me      server.ts:338
- *   dex           micro-emberkin, public                  GET /v1/content/dex   server.ts:431
+ *   save          micro-emberkin, authenticated           GET /v1/saves/me      server.ts
+ *   dex           micro-emberkin, public                  GET /v1/content/dex   server.ts
  *   entitlements  micro-billing, authenticated            GET /entitlements     billing:473
  *
  * Rule 3 of the brief: degradation, not blank pages — one upstream down renders the rest and names

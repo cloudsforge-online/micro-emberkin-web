@@ -9,7 +9,7 @@
  * THE ONE THING THAT IS NOT LIKE THE OTHER FRONTENDS.
  *
  * `@cloudsforge/ui`'s surface registry has no `emberkin` key. `SurfaceKey` in
- * `ui/packages/ui/src/surfaces.ts:23-36` enumerates every addressable surface and Emberkin is not
+ * `ui/packages/ui/src/surfaces.ts` enumerates every addressable surface and Emberkin is not
  * among them, because Emberkin was added to the programme after the registry was written
  * (docs/ecosystem/19-new-products.md, added 2026-07-31). `micro-ui` is single-owner and this
  * repository does not edit it, so the host is DERIVED from a registry entry rather than declared.
@@ -18,15 +18,15 @@
  * `cloudsforgeHosts()` — and swaps its subdomain, or its dev port on localhost. That keeps the
  * environment logic in exactly one place (the registry's) and adds only the two facts the registry
  * does not yet carry: the subdomain `emberkin` and the dev port 4100, which is
- * `emberkin/src/env.ts:121` (`integer(source, 'PORT', 4100, …)`).
+ * `emberkin/src/env.ts` (`integer(source, 'PORT', 4100, …)`).
  *
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  * AND THE PART THAT IS A REAL DEFECT, NOT AN INCONVENIENCE.
  *
  * `cloudsforgeHosts()` derives the apex by stripping a KNOWN subdomain from the browser's
  * hostname, and `KNOWN_SUBS` is built from the registry's own subdomains
- * (`ui/packages/ui/src/surfaces.ts:521-525`). `emberkin` is not one, so an unknown prefix is left
- * alone by design (`ui/packages/ui/src/index.tsx:149-158`) — which is correct for a preview
+ * (`ui/packages/ui/src/surfaces.ts`). `emberkin` is not one, so an unknown prefix is left
+ * alone by design (`ui/packages/ui/src/index.tsx`) — which is correct for a preview
  * deployment and wrong for this app in production. Served from `https://emberkin.<apex>`, the
  * registry resolves:
  *
@@ -43,7 +43,7 @@
  * a mechanical rewrite of a string the registry produced, confined to this file, and it is a
  * no-op in every other environment — localhost, an apex, a preview deployment.
  *
- * THE REGISTRY GAINED ITS `emberkin` ENTRY (`ui/packages/ui/src/surfaces.ts:404`) and the block
+ * THE REGISTRY GAINED ITS `emberkin` ENTRY (`ui/packages/ui/src/surfaces.ts`) and the block
  * this header promised to delete — `deriveSurfaceUrl`, `stripOwnLabel`, `EMBERKIN_SUBDOMAIN`,
  * `EMBERKIN_DEV_PORT` — is gone, in full. The rewire happened in two halves months apart, which
  * is exactly what a promised-deletion comment exists to prevent, and only half-happened anyway:
@@ -117,7 +117,7 @@ export function apiBase(): string {
 /**
  * Billing's base URL, for the ONE read this client makes of it: what the account owns.
  *
- * `pay` is billing in the registry (`ui/packages/ui/src/surfaces.ts:472-483`). The wardrobe needs
+ * `pay` is billing in the registry (`ui/packages/ui/src/surfaces.ts`). The wardrobe needs
  * the entitlement list to know which cosmetics to offer, and `micro-emberkin` exposes no route
  * that returns it — see the note on `listEntitlements` in ./billing.ts.
  */

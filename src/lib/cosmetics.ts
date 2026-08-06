@@ -5,7 +5,7 @@
  * THE PRODUCT RULE, AND HOW IT IS ENFORCED HERE.
  *
  * docs/ecosystem/19-new-products.md §1.2: monetisation is "cosmetics and season passes through
- * billing entitlements, **never stat advantage**". `emberkin/src/cosmetics.ts:1-9` states the
+ * billing entitlements, **never stat advantage**". `emberkin/src/cosmetics.ts` states the
  * service half and enforces it by ABSENCE — equipping writes `saves.equipped_cosmetics` and
  * nothing else, and the engine reads stats from species base stats, per-instance Attunement and
  * Resonance, none of which a cosmetic can reach.
@@ -24,9 +24,9 @@ import { owns, skuOf, TITLE_SCOPE, type Entitlement } from './billing.ts'
 /**
  * The slots the service will accept.
  *
- * `emberkin/src/cosmetics.ts:32` — `const KNOWN_SLOTS = new Set(['frame', 'trail', 'title_card',
+ * `emberkin/src/cosmetics.ts` — `const KNOWN_SLOTS = new Set(['frame', 'trail', 'title_card',
  * 'hud', 'battle_intro'])`. Anything else is a `ValidationError`, which
- * `emberkin/src/server.ts:215-217` maps to a 400. Kept in this order, and asserted against the
+ * `emberkin/src/server.ts` maps to a 400. Kept in this order, and asserted against the
  * service's own list in the test, so the wardrobe cannot offer a slot that does not exist.
  */
 export const SLOTS = ['frame', 'trail', 'title_card', 'hud', 'battle_intro'] as const
@@ -66,10 +66,10 @@ export interface CosmeticItem {
 /**
  * The slot an entitlement names, if it names one.
  *
- * Billing carries free-form `metadata` (`billing/src/entitlements.ts:149`), and the catalogue
+ * Billing carries free-form `metadata` (`billing/src/entitlements.ts`), and the catalogue
  * convention is a `slot` key. Nothing in the estate REQUIRES it, so an entitlement without one is
  * not an error: it becomes a cosmetic offered in every slot, and the service accepts any owned
- * item in any known slot (`emberkin/src/cosmetics.ts:41-51` validates the slot and the ownership
+ * item in any known slot (`emberkin/src/cosmetics.ts` validates the slot and the ownership
  * independently). Guessing a slot from the SKU's spelling would be inventing data.
  */
 export function slotOf(entitlement: Entitlement): CosmeticSlot | null {
@@ -80,9 +80,9 @@ export function slotOf(entitlement: Entitlement): CosmeticSlot | null {
 /**
  * The season pass SKUs, which are NOT cosmetics and are never offered in a slot.
  *
- * `emberkin/src/server.ts:44` — `const SEASON_PASS_SKUS = new Set(['emberkin_season_pass',
+ * `emberkin/src/server.ts` — `const SEASON_PASS_SKUS = new Set(['emberkin_season_pass',
  * 'season_pass'])`. A pass is an entitlement like any other, so it turns up in the same list; it
- * buys a season's cosmetic track and a welcome reward (`server.ts:306-311`), not a slot and not a
+ * buys a season's cosmetic track and a welcome reward (`server.ts`), not a slot and not a
  * stat. Filtering it out of the wardrobe stops it being rendered as something to wear.
  */
 export const SEASON_PASS_SKUS: readonly string[] = ['emberkin_season_pass', 'season_pass']

@@ -5,7 +5,7 @@
  * NONE OF THIS CHANGES A NUMBER, AND THE PAGE SAYS SO ONCE, PLAINLY.
  *
  * 19 §1.2: monetisation is cosmetics and season passes, "never stat advantage". The service
- * enforces it by absence — `emberkin/src/cosmetics.ts:52-77` writes `equipped_cosmetics` and
+ * enforces it by absence — `emberkin/src/cosmetics.ts` writes `equipped_cosmetics` and
  * nothing else — and this repository enforces it with a type that has no stat field and a test
  * that applies every item to a Kin and asserts nothing moved (`lib/cosmetics.ts`).
  *
@@ -68,7 +68,7 @@ export function WardrobePage() {
       setSave(withCosmetics(save, answer.equippedCosmetics))
     } catch (err) {
       // The two refusals the service defines are surfaced as themselves. A 503 here is billing
-      // being unreachable and the write FAILING CLOSED (`emberkin/src/server.ts:221-223`) — "ask
+      // being unreachable and the write FAILING CLOSED (`emberkin/src/server.ts`) — "ask
       // again later", never "wear it anyway" — and it is not retried automatically, because an
       // automatic retry into a service that is refusing is how a degraded shop becomes an outage.
       const notice =
@@ -155,7 +155,7 @@ export function WardrobePage() {
                   <ul className="ek-slot__options">
                     {/*
                       "None" is a real option and is a WRITE, not an omission: itemUrn null clears
-                      the slot (`emberkin/src/server.ts:396-397` requires null explicitly, never
+                      the slot (`emberkin/src/server.ts` requires null explicitly, never
                       undefined). Rendering it as a radio makes the current state legible without
                       colour.
                     */}

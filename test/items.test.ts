@@ -17,7 +17,7 @@ import {
   RESONATORS,
 } from '../src/lib/items.ts'
 
-describe('the resonators — engine/items.ts:4', () => {
+describe('the resonators — engine/items.ts', () => {
   it('are the three grades', () => {
     assert.deepEqual([...RESONATORS], ['resonator', 'greater_resonator', 'master_resonator'])
   })
@@ -29,7 +29,7 @@ describe('the resonators — engine/items.ts:4', () => {
   })
 })
 
-describe('healAmount — engine/items.ts:8-11', () => {
+describe('healAmount — engine/items.ts', () => {
   it('reads the four potions', () => {
     assert.equal(healAmount('potion'), 40)
     assert.equal(healAmount('super_potion'), 90)
@@ -37,14 +37,14 @@ describe('healAmount — engine/items.ts:8-11', () => {
     assert.equal(healAmount('max_potion'), 99999)
   })
 
-  it('is zero for anything else — engine/items.ts:12 `default: return 0`', () => {
+  it('is zero for anything else — engine/items.ts `default: return 0`', () => {
     assert.equal(healAmount('salve'), 0)
     assert.equal(healAmount('resonator'), 0)
     assert.equal(healAmount('nothing'), 0)
   })
 })
 
-describe('curesStatus — engine/items.ts:18', () => {
+describe('curesStatus — engine/items.ts', () => {
   it('is salve and full_heal', () => {
     assert.equal(curesStatus('salve'), true)
     assert.equal(curesStatus('full_heal'), true)
@@ -56,7 +56,7 @@ describe('curesStatus — engine/items.ts:18', () => {
   })
 })
 
-describe('itemName — engine/items.ts:35-46', () => {
+describe('itemName — engine/items.ts', () => {
   it('reads the nine display names', () => {
     assert.equal(itemName('potion'), 'Potion')
     assert.equal(itemName('super_potion'), 'Super Potion')
@@ -69,7 +69,7 @@ describe('itemName — engine/items.ts:35-46', () => {
     assert.equal(itemName('master_resonator'), 'Master Resonator')
   })
 
-  it('FALLS THROUGH TO THE ID, exactly as engine/items.ts:45 does', () => {
+  it('FALLS THROUGH TO THE ID, exactly as engine/items.ts does', () => {
     // A new item added to the service shows up in the satchel as its id rather than vanishing from
     // a screen that is supposed to list everything you are carrying.
     assert.equal(itemName('shard_lantern'), 'shard_lantern')

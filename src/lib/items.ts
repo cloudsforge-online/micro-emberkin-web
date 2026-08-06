@@ -5,17 +5,17 @@
  * is no items JSON and no route that serves one. So this is a transcription, and the citation
  * is per line rather than per file:
  *
- *   RESONATORS                         engine/items.ts:4
- *   healAmount potion 40               engine/items.ts:8
- *              super_potion 90         engine/items.ts:9
- *              hyper_potion 160        engine/items.ts:10
- *              max_potion 99999        engine/items.ts:11
- *   curesStatus salve, full_heal       engine/items.ts:18
- *   resonatorPower 1.0 / 1.5 / 255.0   engine/items.ts:26-30
- *   displayName                        engine/items.ts:35-46
+ *   RESONATORS                         engine/items.ts
+ *   healAmount potion 40               engine/items.ts
+ *              super_potion 90         engine/items.ts
+ *              hyper_potion 160        engine/items.ts
+ *              max_potion 99999        engine/items.ts
+ *   curesStatus salve, full_heal       engine/items.ts
+ *   resonatorPower 1.0 / 1.5 / 255.0   engine/items.ts
+ *   displayName                        engine/items.ts
  *
  * An id this transcription does not know falls through to itself, exactly as `displayName` does
- * (`engine/items.ts:45`) — so a new item added to the service shows up in the satchel as its id
+ * (`engine/items.ts`) — so a new item added to the service shows up in the satchel as its id
  * rather than vanishing from a screen that is supposed to list everything you are carrying.
  */
 

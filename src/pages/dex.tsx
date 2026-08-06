@@ -1,7 +1,7 @@
 /**
  * The dex: all fifty Kin, and which you have met.
  *
- * Public — `GET /v1/content/dex` takes no principal (`emberkin/src/server.ts:431`), so a visitor
+ * Public — `GET /v1/content/dex` takes no principal (`emberkin/src/server.ts`), so a visitor
  * who has not signed in can read the whole roster. What they cannot see is the "seen" state, which
  * comes from the save.
  *

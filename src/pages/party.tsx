@@ -123,8 +123,8 @@ function PartyCard({ kin, slot }: { kin: KinSave; slot: number }) {
 
       {/*
         The Art is the thing Resonance unlocks, so it is named here with its gate. `isResonant`
-        is `resonance >= 50` (`emberkin/src/engine/kin.ts:261-263`), and at Perfect Resonance the
-        first Art each battle is free (`kin.ts:280-286`). Both are stated rather than implied by a
+        is `resonance >= 50` (`emberkin/src/engine/kin.ts`), and at Perfect Resonance the
+        first Art each battle is free (`kin.ts`). Both are stated rather than implied by a
         greyed-out button.
       */}
       {art ? (
@@ -166,7 +166,7 @@ function PartyCard({ kin, slot }: { kin: KinSave; slot: number }) {
  * An evolution requirement, in words.
  *
  * The keys are `campaign`/`species.json`'s own — `level`, `resonance`, `temperamentMin`,
- * `temperamentMax`, `item` — and `emberkin/src/engine/kin.ts:350-357` is what enforces them. An
+ * `temperamentMax`, `item` — and `emberkin/src/engine/kin.ts` is what enforces them. An
  * unrecognised key is printed as `key: value` rather than dropped: a requirement this build cannot
  * phrase is still a requirement the player has to meet, and hiding it would make an evolution look
  * impossible.

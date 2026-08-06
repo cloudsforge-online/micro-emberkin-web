@@ -62,7 +62,7 @@ file is [the import seam](#the-3d-scope-stated-honestly).
 `web/game/engine/` — the battle engine, the RNG, the damage calculator, the party model — and
 `web/game/engine/save.js`, which wrote the whole game to `localStorage` and read it back as fact.
 
-Battles resolve on the server from a seed (`emberkin/src/battles.ts:124-147`). The engine is
+Battles resolve on the server from a seed (`emberkin/src/battles.ts`). The engine is
 deterministic and reproduces the original C# bit-for-bit, so a battle log replays exactly; what
 this client plays back is a recording, not a simulation. A client that *can* resolve a battle is a
 client that can lie about one, so it cannot: `test/bundle.test.ts` fails if an RNG, a damage
@@ -107,14 +107,14 @@ method, body, headers — for every one this client uses.
 
 | Call | Route | Verified at |
 | --- | --- | --- |
-| `startGame` | `POST /v1/saves` | `server.ts:322` |
-| `fetchSave` | `GET /v1/saves/me` | `server.ts:338` |
-| `submitBattle` | `POST /v1/saves/me/battles` | `server.ts:345` |
-| `equipCosmetic` | `PUT /v1/saves/me/cosmetics` | `server.ts:392` |
-| `fetchAchievements` | `GET /v1/saves/me/achievements` | `server.ts:409` |
-| `fetchDex` | `GET /v1/content/dex` | `server.ts:431` |
-| `fetchReadiness` | `GET /readyz` | `server.ts:240` |
-| *(billing)* | `GET /entitlements` | `billing/src/server.ts:473` |
+| `startGame` | `POST /v1/saves` | `server.ts` |
+| `fetchSave` | `GET /v1/saves/me` | `server.ts` |
+| `submitBattle` | `POST /v1/saves/me/battles` | `server.ts` |
+| `equipCosmetic` | `PUT /v1/saves/me/cosmetics` | `server.ts` |
+| `fetchAchievements` | `GET /v1/saves/me/achievements` | `server.ts` |
+| `fetchDex` | `GET /v1/content/dex` | `server.ts` |
+| `fetchReadiness` | `GET /readyz` | `server.ts` |
+| *(billing)* | `GET /entitlements` | `billing/src/server.ts` |
 
 Not called: `GET /livez`, `GET /metrics`, and `POST /v1/events` — the last is a signature-checked
 webhook and is not a browser's business.
@@ -139,8 +139,8 @@ disabled buttons.
 
 **Nothing lists the account's cosmetic entitlements.** `micro-emberkin` reaches billing at
 `/internal/entitlements/:userId`, which refuses a user token by design
-(`billing/src/server.ts:505-508`). The wardrobe therefore reads billing's own `GET /entitlements`
-directly, and `src/lib/billing.ts` reproduces `emberkin/src/billingclient.ts:80-93`'s ownership
+(`billing/src/server.ts`). The wardrobe therefore reads billing's own `GET /entitlements`
+directly, and `src/lib/billing.ts` reproduces `emberkin/src/billingclient.ts`'s ownership
 rule byte for byte so the two sides cannot disagree about what "owns" means. A client that must
 reach a second service to render one screen degrades twice; that degradation is handled, but the
 route would be better.
@@ -155,7 +155,7 @@ places, both of which delete themselves the day an entry lands.
 
 1. **Its own host is derived.** `deriveSurfaceUrl` takes a registry surface that does exist
    (`worlds-api`) and swaps the subdomain, or the dev port on localhost. It adds only the two facts
-   the registry lacks: the subdomain `emberkin` and port `4100` (`emberkin/src/env.ts:121`).
+   the registry lacks: the subdomain `emberkin` and port `4100` (`emberkin/src/env.ts`).
 
    **RESOLVED, AND IN THE STRONGEST WAY — THE DERIVATION IS GONE.** This paragraph used to warn
    that `worlds-api` was a poor donor row and that "the day `worlds-api` leaves the registry, this
@@ -166,7 +166,7 @@ places, both of which delete themselves the day an entry lands.
 
 2. **The registry's other answers are corrected**, and this one is a real defect rather than an
    inconvenience. `cloudsforgeHosts()` derives the apex by stripping a *known* subdomain, and
-   `KNOWN_SUBS` is built from the registry's own list (`ui/packages/ui/src/surfaces.ts:521-525`).
+   `KNOWN_SUBS` is built from the registry's own list (`ui/packages/ui/src/surfaces.ts`).
    Served from `https://emberkin.<apex>`, it resolved `nimbus` → `https://nimbus.emberkin.<apex>`,
    and likewise `pay` and `lantern` — sign-in, billing and telemetry each addressing a hostname
    that does not exist. `hosts()` removes the stray label. `test/hosts.test.ts` pins the *wrong*
@@ -209,7 +209,7 @@ it is false for any Kin that has ever spent Sync on an Art.
 
 Max HP, by contrast, *is* derivable exactly — `attunement`, `level` and `resonance` come from the
 save and the base stat from the local content — so it is computed, with the engine's truncation
-order reproduced to the point (`emberkin/src/engine/kin.ts:148-153`) and pinned by test. Where the
+order reproduced to the point (`emberkin/src/engine/kin.ts`) and pinned by test. Where the
 local content copy lacks a species, the raw number is shown alone rather than a bar with no scale.
 
 ---

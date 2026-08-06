@@ -9,7 +9,7 @@ import { speciesArt, type SpeciesArtSize } from '../lib/art.ts'
 import { typeChip } from '../lib/types.ts'
 import type { KinSave } from '../lib/emberkin.ts'
 import type { Content } from '../lib/content.ts'
-// `emberkin/src/engine/kin.ts:143-146`, kept in one place rather than restated here.
+// `emberkin/src/engine/kin.ts`, kept in one place rather than restated here.
 import { statMultiplier as resonanceStatMultiplier } from '../lib/resonance.ts'
 
 /**
@@ -97,7 +97,7 @@ export function SpeciesPortrait({
 /**
  * A Kin's health.
  *
- * The save carries `currentHp` but not `maxHp` (`emberkin/src/engine/saves.ts:9-22`). Max is
+ * The save carries `currentHp` but not `maxHp` (`emberkin/src/engine/saves.ts`). Max is
  * DERIVED — and derivable exactly, because every input to the derivation is on the wire:
  * `attunement`, `level` and `resonance` come from the save, and `baseStats.hp` from the local
  * content copy. See `maxHpOf` below.
@@ -151,7 +151,7 @@ export function HealthReadout({ kin, content }: { kin: KinSave; content: Content
 /**
  * A Kin's maximum HP — the engine's arithmetic, reproduced exactly.
  *
- * `emberkin/src/engine/kin.ts:148-153`:
+ * `emberkin/src/engine/kin.ts`:
  *
  *     const b = this.species.baseStats.hp;
  *     const iv = this.attunement.hp;
@@ -159,7 +159,7 @@ export function HealthReadout({ kin, content }: { kin: KinSave; content: Content
  *     return Math.trunc(raw * this.resonanceStatMultiplier);
  *
  * Every input is available to this client: `b` from the local content copy, and `iv`, `level` and
- * `resonance` from the save (`engine/saves.ts:9-22`, which persists `attunement`). So this is not
+ * `resonance` from the save (`engine/saves.ts`, which persists `attunement`). So this is not
  * an estimate and is not labelled as one.
  *
  * THE TRUNCATION ORDER IS THE WHOLE THING. Two truncations, in that order: the level term is

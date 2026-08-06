@@ -1,6 +1,6 @@
 /**
  * Host resolution — from the registry, like every other frontend, since the day the registry
- * gained its `emberkin` entry (`ui/packages/ui/src/surfaces.ts:404`).
+ * gained its `emberkin` entry (`ui/packages/ui/src/surfaces.ts`).
  *
  * This header used to describe a workaround no other frontend had: the registry predated
  * Emberkin, so hosts were DERIVED from the worlds-api anchor by `deriveSurfaceUrl`. That code is
@@ -8,7 +8,7 @@
  * is the plain thing: `hosts()` resolves the registry entry, `apiBase()` is same-origin in
  * production and the pinned devPort under `pnpm dev`, and a preview deployment's full hostname is
  * treated as the apex because `cloudsforgeHosts()` deliberately leaves an unknown subdomain alone
- * (`ui/packages/ui/src/index.tsx:149-158`).
+ * (`ui/packages/ui/src/index.tsx`).
  */
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, it } from 'node:test'
@@ -62,7 +62,7 @@ describe('apiBase', () => {
   })
 
   it('uses the port the registry records, which is the port the service binds', () => {
-    // 4100 — `emberkin/src/env.ts:121`. The constant that used to hold this lived here because the
+    // 4100 — `emberkin/src/env.ts`. The constant that used to hold this lived here because the
     // registry had no emberkin surface; it does now, so the fact has one home instead of two.
     const emberkin = SURFACES.find((x) => x.key === 'emberkin')
     assert.equal(emberkin?.devPort, 4100)
@@ -115,7 +115,7 @@ describe('the registry resolves this app without correction', () => {
   })
 
   it('carries the port the service actually binds', () => {
-    // 4100 — `emberkin/src/env.ts:121`. It was briefly registered as 3014, a free-looking number
+    // 4100 — `emberkin/src/env.ts`. It was briefly registered as 3014, a free-looking number
     // chosen without reading the service, which is the same mistake that gave foresight beacon\u2019s
     // port. A devPort is a fact about a service, not an allocation.
     const emberkin = SURFACES.find((x) => x.key === 'emberkin')

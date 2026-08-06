@@ -11,13 +11,13 @@
  * and a copy that drifts is worse than no copy — the bar would fill at 25 while the server granted
  * the bonus at 30 and nobody would know which was lying.
  *
- *   Resonance 0..100, persistent            emberkin/src/engine/kin.ts:34
- *   Temperament -100..+100                  emberkin/src/engine/kin.ts:35
- *   Sync 0..100, RESETS EACH BATTLE         emberkin/src/engine/kin.ts:36
- *   Attuned at 25  (+6% stats)              emberkin/src/engine/kin.ts:143-146, 258-260
- *   Resonant at 50 (unlocks Resonance Art)  emberkin/src/engine/kin.ts:261-263
- *   Perfect at 100 (+12% stats, free Art)   emberkin/src/engine/kin.ts:144, 264-266, 280-286
- *   Achievement thresholds 25 / 50 / 100    emberkin/src/battles.ts:61-65
+ *   Resonance 0..100, persistent            emberkin/src/engine/kin.ts
+ *   Temperament -100..+100                  emberkin/src/engine/kin.ts
+ *   Sync 0..100, RESETS EACH BATTLE         emberkin/src/engine/kin.ts
+ *   Attuned at 25  (+6% stats)              emberkin/src/engine/kin.ts, 258-260
+ *   Resonant at 50 (unlocks Resonance Art)  emberkin/src/engine/kin.ts
+ *   Perfect at 100 (+12% stats, free Art)   emberkin/src/engine/kin.ts, 264-266, 280-286
+ *   Achievement thresholds 25 / 50 / 100    emberkin/src/battles.ts
  *
  * The achievement thresholds and the stat thresholds are the same three numbers, from two places
  * in the service. That coincidence is asserted in `test/resonance.test.ts` rather than assumed: if
@@ -26,15 +26,15 @@
  * ────────────────────────────────────────────────────────────────────────────────────────────────
  */
 
-/** `emberkin/src/engine/kin.ts:34` — `resonance = 0; // 0..100, persistent bond`. */
+/** `emberkin/src/engine/kin.ts` — `resonance = 0; // 0..100, persistent bond`. */
 export const RESONANCE_MIN = 0
 export const RESONANCE_MAX = 100
 
-/** `emberkin/src/engine/kin.ts:35` — `temperament = 0; // -100 (Harmony) .. +100 (Ferocity)`. */
+/** `emberkin/src/engine/kin.ts` — `temperament = 0; // -100 (Harmony) .. +100 (Ferocity)`. */
 export const TEMPERAMENT_MIN = -100
 export const TEMPERAMENT_MAX = 100
 
-/** `emberkin/src/engine/kin.ts:36` — `sync = 0; // 0..100, resets each battle`. */
+/** `emberkin/src/engine/kin.ts` — `sync = 0; // 0..100, resets each battle`. */
 export const SYNC_MIN = 0
 export const SYNC_MAX = 100
 
@@ -49,9 +49,9 @@ export interface ResonanceBand {
   readonly at: number
   readonly name: string
   readonly effect: string
-  /** The stat multiplier at this band. `emberkin/src/engine/kin.ts:143-146`. */
+  /** The stat multiplier at this band. `emberkin/src/engine/kin.ts`. */
   readonly statMultiplier: number
-  /** The achievement this band unlocks, if any. `emberkin/src/battles.ts:56-65`. */
+  /** The achievement this band unlocks, if any. `emberkin/src/battles.ts`. */
   readonly achievement: string | null
 }
 
@@ -59,7 +59,7 @@ export interface ResonanceBand {
  * The bands, ascending.
  *
  * Note that 50 grants NO stat multiplier — `resonanceStatMultiplier` steps at 25 and 100 only
- * (`engine/kin.ts:143-146`) — while `isResonant` at 50 (`engine/kin.ts:261-263`) is what gates the
+ * (`engine/kin.ts`) — while `isResonant` at 50 (`engine/kin.ts`) is what gates the
  * Resonance Art. Two different mechanics on one scale. A UI that drew one bar with three ticks and
  * one caption would have to pick one and be wrong about the other, which is why `bandFor` returns
  * the band and `describeResonance` returns BOTH the reached band and the next one.
@@ -112,7 +112,7 @@ export function nextBandFor(resonance: number): ResonanceBand | null {
 /**
  * The stat multiplier the SERVER will apply at this Resonance.
  *
- * Reproduces `emberkin/src/engine/kin.ts:143-146` exactly, including its ordering — 100 is tested
+ * Reproduces `emberkin/src/engine/kin.ts` exactly, including its ordering — 100 is tested
  * before 25, so a value of 100 is 1.12 and not 1.06. Displayed as information, never used to
  * compute a stat this app shows: stats come from the save.
  */
@@ -164,10 +164,10 @@ export function describeResonance(raw: number): ResonanceDisplay {
 /**
  * Temperament, as a lean rather than a level.
  *
- * `emberkin/src/engine/kin.ts:268-269` — `temperamentIsFerocious` is `temperament >= 0`, so ZERO
+ * `emberkin/src/engine/kin.ts` — `temperamentIsFerocious` is `temperament >= 0`, so ZERO
  * IS FEROCIOUS, not neutral. That asymmetry is the service's and is reproduced rather than
  * tidied: a client that called 0 "balanced" would disagree with the engine at exactly the value
- * a freshly created Kin most often holds (`engine/kin.ts:65` seeds from `species.temperamentBias`).
+ * a freshly created Kin most often holds (`engine/kin.ts` seeds from `species.temperamentBias`).
  */
 export interface TemperamentDisplay {
   readonly value: number
@@ -195,10 +195,10 @@ export function describeTemperament(raw: number): TemperamentDisplay {
 /**
  * Sync — which this client CANNOT read, and says so.
  *
- * Sync resets each battle (`emberkin/src/engine/kin.ts:36`) and `kinToSave`
- * (`emberkin/src/engine/saves.ts:24-37`) does not persist it, so it is absent from every save this
+ * Sync resets each battle (`emberkin/src/engine/kin.ts`) and `kinToSave`
+ * (`emberkin/src/engine/saves.ts`) does not persist it, so it is absent from every save this
  * app receives. There is no route that returns a live battle's Sync, because a battle is resolved
- * in one request and returns a log, not a running state (`emberkin/src/server.ts:345-390`).
+ * in one request and returns a log, not a running state (`emberkin/src/server.ts`).
  *
  * Rule 4 of the brief — never invent a number — makes this function's shape the whole point: it
  * returns `known: false` and a sentence, and the HUD renders that sentence in the Sync slot

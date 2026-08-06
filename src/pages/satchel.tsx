@@ -1,13 +1,13 @@
 /**
  * The satchel: what you are carrying.
  *
- * Read-only, and the page says why. `inventory` is on the save (`emberkin/src/savegame.ts:41`) but
- * NOTHING writes it after creation: `POST /v1/saves` sets it once (`server.ts:322`), and the only
- * other writers are the battle route, which touches party/box/dexSeen (`battles.ts:184-191`), and
+ * Read-only, and the page says why. `inventory` is on the save (`emberkin/src/savegame.ts`) but
+ * NOTHING writes it after creation: `POST /v1/saves` sets it once (`server.ts`), and the only
+ * other writers are the battle route, which touches party/box/dexSeen (`battles.ts`), and
  * the cosmetics route, which touches equipped_cosmetics. There is no `PUT /v1/saves/me/inventory`.
  *
  * So items are consumed only inside a battle, by submitting an `item` script action
- * (`server.ts:504`) — and this screen's job is to tell the player what they have to spend there,
+ * (`server.ts`) — and this screen's job is to tell the player what they have to spend there,
  * not to offer a "use" button that has nowhere to send the request.
  */
 import { useGame } from '../lib/game.tsx'

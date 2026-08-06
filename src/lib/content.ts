@@ -9,7 +9,7 @@
  *
  * The RENDERING copy is `public/game/data/*.json`, carried forward from `kindred-resonance`
  * `content/`. It exists because the service publishes only a thin dex — `GET /v1/content/dex`
- * returns `{id, dexNumber, name, types}` and nothing more (`emberkin/src/server.ts:434`) — and a
+ * returns `{id, dexNumber, name, types}` and nothing more (`emberkin/src/server.ts`) — and a
  * client cannot draw a creature, list a learnset or explain a type matchup from four fields.
  *
  * Two copies of anything drift. So the app FETCHES the service's dex on boot and reconciles:
@@ -245,7 +245,7 @@ function sameTypes(a: readonly string[], b: readonly string[]): boolean {
 /**
  * A species' display name, from whichever copy has one.
  *
- * The service's dex carries names (`emberkin/src/server.ts:434`), so a species missing from the
+ * The service's dex carries names (`emberkin/src/server.ts`), so a species missing from the
  * local content still has one — which is the difference between "Aetherion — not in this build"
  * and "unknown species aetherion".
  */

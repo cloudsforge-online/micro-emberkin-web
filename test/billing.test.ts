@@ -1,7 +1,7 @@
 /**
  * Billing: the request, and the ownership rule in both directions.
  *
- * The ownership rule is duplicated between this client and `emberkin/src/billingclient.ts:80-93`,
+ * The ownership rule is duplicated between this client and `emberkin/src/billingclient.ts`,
  * and a duplicated rule that drifts is worse than no rule: the wardrobe would offer an item the
  * service then refused, or hide one it would have allowed. So every branch of it is driven here,
  * both ways — a gate that only ever answers "yes" in its tests is not a gate.
@@ -12,7 +12,7 @@ import { installFetch, installStorage, installWindow, json, removeStorage, remov
 import { __resetAuth, setTokens } from '../src/lib/api.ts'
 import { fetchEntitlements, matchesTitle, owns, skuOf, TITLE_SCOPE, type Entitlement } from '../src/lib/billing.ts'
 
-/** `ui/packages/ui/src/surfaces.ts:472-483` — `pay` is billing, dev port 4003. */
+/** `ui/packages/ui/src/surfaces.ts` — `pay` is billing, dev port 4003. */
 const BILLING = 'http://localhost:4003'
 
 let stub: ReturnType<typeof installFetch>
@@ -44,11 +44,11 @@ function ent(overrides: Partial<Entitlement> = {}): Entitlement {
   }
 }
 
-describe('fetchEntitlements — GET /entitlements (billing/src/server.ts:473)', () => {
+describe('fetchEntitlements — GET /entitlements (billing/src/server.ts)', () => {
   it('addresses BILLING, not emberkin', async () => {
     // emberkin has no entitlement route a browser may call: its own client uses
     // `/internal/entitlements/:userId`, which refuses a user token outright
-    // (`billing/src/server.ts:505-508`).
+    // (`billing/src/server.ts`).
     stub = installFetch(() => json(200, { at: '2026-01-01T00:00:00.000Z', entitlements: [] }))
     await fetchEntitlements()
     assert.equal(stub.calls[0]?.url, `${BILLING}/entitlements`)
@@ -61,13 +61,13 @@ describe('fetchEntitlements — GET /entitlements (billing/src/server.ts:473)', 
     assert.ok(!stub.calls[0]!.url.includes('/internal/'))
   })
 
-  it('sends no userId — billing defaults the subject to the caller (server.ts:475-479)', async () => {
+  it('sends no userId — billing defaults the subject to the caller (server.ts)', async () => {
     stub = installFetch(() => json(200, { entitlements: [] }))
     await fetchEntitlements()
     assert.equal(new URL(stub.calls[0]!.url).searchParams.get('userId'), null)
   })
 
-  it('sends NO scope filter, matching emberkin/src/billingclient.ts:86-88', async () => {
+  it('sends NO scope filter, matching emberkin/src/billingclient.ts', async () => {
     // "Asked WITHOUT the scope filter and matched here, so a cross-title (`platform`-scoped)
     // cosmetic is found." A `?scope=` here would hide platform cosmetics the service would equip.
     stub = installFetch(() => json(200, { entitlements: [] }))
@@ -100,7 +100,7 @@ describe('fetchEntitlements — GET /entitlements (billing/src/server.ts:473)', 
   })
 })
 
-describe('skuOf — emberkin/src/billingclient.ts:55-58', () => {
+describe('skuOf — emberkin/src/billingclient.ts', () => {
   it('strips the catalogue urn prefix', () => {
     assert.equal(skuOf('cf:catalogue:item:ember_frame'), 'ember_frame')
   })
@@ -118,7 +118,7 @@ describe('skuOf — emberkin/src/billingclient.ts:55-58', () => {
   })
 })
 
-describe('matchesTitle — emberkin/src/billingclient.ts:88-92', () => {
+describe('matchesTitle — emberkin/src/billingclient.ts', () => {
   it('platform covers every title', () => {
     assert.equal(matchesTitle('platform', 'emberkin'), true)
     assert.equal(matchesTitle('platform', 'anything'), true)
@@ -140,7 +140,7 @@ describe('matchesTitle — emberkin/src/billingclient.ts:88-92', () => {
   })
 })
 
-describe('owns — the client half of emberkin/src/billingclient.ts:80-93', () => {
+describe('owns — the client half of emberkin/src/billingclient.ts', () => {
   it('says yes for an active, title-scoped, matching sku', () => {
     assert.equal(owns([ent()], 'ember_frame'), true)
   })
@@ -154,7 +154,7 @@ describe('owns — the client half of emberkin/src/billingclient.ts:80-93', () =
   })
 
   it('says NO for an inactive entitlement', () => {
-    // `active` is billing's computation at an explicit instant (`entitlements.ts:155`), not ours.
+    // `active` is billing's computation at an explicit instant (`entitlements.ts`), not ours.
     assert.equal(owns([ent({ active: false })], 'ember_frame'), false)
   })
 

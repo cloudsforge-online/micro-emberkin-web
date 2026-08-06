@@ -22,7 +22,7 @@ import {
 } from '../src/lib/resonance.ts'
 
 describe('the bands', () => {
-  it('are 0, 25, 50 and 100 — engine/kin.ts:143-146 and 258-266', () => {
+  it('are 0, 25, 50 and 100 — engine/kin.ts and 258-266', () => {
     assert.deepEqual(
       RESONANCE_BANDS.map((b) => b.at),
       [0, 25, 50, 100],
@@ -35,7 +35,7 @@ describe('the bands', () => {
     }
   })
 
-  it('agree with battles.ts:61-65, where the achievements are granted', () => {
+  it('agree with battles.ts, where the achievements are granted', () => {
     // `RESONANCE_THRESHOLDS` in the service: attuned 25, resonant 50, perfect 100. If the service
     // ever moves one and not the other, this app should fail its own test rather than show a
     // milestone that pays nothing.
@@ -47,7 +47,7 @@ describe('the bands', () => {
     assert.equal(byAchievement.get('resonance_perfect'), 100)
   })
 
-  it('name 50 as Resonant with no stat change, because kin.ts:143-146 does not step there', () => {
+  it('name 50 as Resonant with no stat change, because kin.ts does not step there', () => {
     const resonant = RESONANCE_BANDS.find((b) => b.at === 50)
     assert.equal(resonant?.name, 'Resonant')
     assert.equal(resonant?.statMultiplier, 1.06)
@@ -100,7 +100,7 @@ describe('nextBandFor', () => {
   })
 })
 
-describe('statMultiplier — engine/kin.ts:143-146, ORDER INCLUDED', () => {
+describe('statMultiplier — engine/kin.ts, ORDER INCLUDED', () => {
   it('is 1 below 25', () => {
     assert.equal(statMultiplier(0), 1)
     assert.equal(statMultiplier(24), 1)
@@ -156,7 +156,7 @@ describe('describeResonance', () => {
 })
 
 describe('describeTemperament', () => {
-  it('calls ZERO ferocious, because engine/kin.ts:268-269 is `temperament >= 0`', () => {
+  it('calls ZERO ferocious, because engine/kin.ts is `temperament >= 0`', () => {
     // The asymmetry is the service's. Calling 0 "balanced" would disagree with the engine at
     // exactly the value a freshly created Kin most often holds.
     const d = describeTemperament(0)
@@ -202,7 +202,7 @@ describe('describeSync — the number this client does not have', () => {
 
   it('NEVER returns zero for unknown — that would be a false claim', () => {
     // A bar drawn at zero says "this Kin has no Sync". It is false for any Kin that has ever
-    // spent Sync on an Art, and `kinToSave` (engine/saves.ts:24-37) simply does not persist it.
+    // spent Sync on an Art, and `kinToSave` (engine/saves.ts) simply does not persist it.
     assert.notEqual(describeSync().value, 0)
   })
 

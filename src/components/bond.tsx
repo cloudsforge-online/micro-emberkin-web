@@ -88,7 +88,7 @@ export function TemperamentMeter({ value, compact = false }: { value: number; co
       </div>
       {/*
         A two-ended meter: the midpoint is the SCALE's zero and the fill grows from it. Note that
-        zero itself reads as Ferocity, which is the engine's rule (`kin.ts:268`) and not a rounding
+        zero itself reads as Ferocity, which is the engine's rule (`kin.ts`) and not a rounding
         choice — see describeTemperament.
       */}
       <div

@@ -6,7 +6,7 @@
  *
  * `kindred-resonance`'s `web/game/engine/save.js` wrote the whole game to `localStorage` and read
  * it back as fact. That file is deleted in this repository, and this one replaces it. The save
- * lives in Postgres behind `micro-emberkin` (`emberkin/src/savegame.ts:1-7`), every battle is
+ * lives in Postgres behind `micro-emberkin` (`emberkin/src/savegame.ts`), every battle is
  * resolved there, and the party this app draws after a battle is the party the SERVER returned —
  * never a party this app computed and hoped matched.
  *
@@ -14,13 +14,13 @@
  * conditions and they are not interchangeable.
  *
  *   loading   we have not asked yet
- *   absent    we asked; this account has never started a game (a 404, `server.ts:341`)
+ *   absent    we asked; this account has never started a game (a 404, `server.ts`)
  *   present   we have the save
  *   failed    we asked and could not find out
  *
  * `absent` and `failed` are the pair worth separating. Collapsing them shows the title screen's
  * "New game" button to a player whose save exists but whose service is down — one click from
- * overwriting nothing (the route is idempotent, `server.ts:335`) but every click from a player
+ * overwriting nothing (the route is idempotent, `server.ts`) but every click from a player
  * believing their progress is gone. So `failed` says what failed and offers a retry, never a
  * fresh start.
  * ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ export const IDLE: SaveSession = { machine: LOADING, busy: false }
 /**
  * Load the save.
  *
- * `null` from `fetchSave` is `absent`, not `failed`: the 404 at `emberkin/src/server.ts:341` is
+ * `null` from `fetchSave` is `absent`, not `failed`: the 404 at `emberkin/src/server.ts` is
  * what a first-time player gets, and it is the ordinary path through this function.
  */
 export async function loadSave(): Promise<SaveMachine> {
@@ -78,7 +78,7 @@ export interface StartGameInput {
  * Begin a game, from an `absent` machine.
  *
  * `wasAbsent` is what the caller knew before it asked, and it is the only honest source for
- * "this is a new game": the 201/200 the service sends (`server.ts:335`) is a status the shared
+ * "this is a new game": the 201/200 the service sends (`server.ts`) is a status the shared
  * request client does not surface. A player who reaches this from a `present` machine gets their
  * existing save back — the route is idempotent — and `created` correctly reads false.
  */
@@ -117,7 +117,7 @@ export function adopt(save: SaveState): SaveMachine {
  * Apply the cosmetics map a cosmetic write returned.
  *
  * `PUT /v1/saves/me/cosmetics` answers `{equippedCosmetics}` and nothing else
- * (`emberkin/src/server.ts:406`), so this is the one place a partial update is correct — the
+ * (`emberkin/src/server.ts`), so this is the one place a partial update is correct — the
  * server has told us the new value of exactly one field, and re-reading the whole save to learn
  * a thing we were just told would be a round trip for nothing.
  *
@@ -194,8 +194,8 @@ export function battleDelta(before: SaveState, after: SaveState): BattleDelta {
   return {
     kin,
     newlySeen: after.dexSeen.filter((id) => !seenBefore.has(id)),
-    // The box is an APPEND-ONLY array with no ids (`emberkin/src/savegame.ts:41`), and the only
-    // thing that writes it is a catch, which pushes (`emberkin/src/battles.ts:155`). So the new
+    // The box is an APPEND-ONLY array with no ids (`emberkin/src/savegame.ts`), and the only
+    // thing that writes it is a catch, which pushes (`emberkin/src/battles.ts`). So the new
     // entries are the tail past the old length. Matching by value instead would fail on the case
     // that matters least and confuses most — catching a second identical Kin.
     caught: after.box.slice(before.box.length).map((k) => k.speciesId),

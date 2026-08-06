@@ -6,7 +6,7 @@
  *
  * The brief said "the type palette is CVD-corrected in `ui/` — use it". It is not there. `micro-ui`
  * carries the five product accents and the eight-slot categorical VIZ palette
- * (`ui/packages/ui/src/tokens.css:211-218`), both validated for colour-vision deficiency, and
+ * (`ui/packages/ui/src/tokens.css`), both validated for colour-vision deficiency, and
  * neither is an element palette; `SurfaceKey` has no Emberkin entry at all. The nine element hues
  * that DO exist are art-direction values recorded per icon in the asset manifest — ember `#ff6b4a`,
  * frost `#8ee7ff`, gale `#9fd0ff`, lumen `#ffe59e`, spark `#ffd23f`, stone `#c9a06b`, tide
@@ -14,7 +14,7 @@
  * frost/gale differ by roughly one channel step in blue, and lumen/spark are the same yellow at
  * two lightnesses. They are correct for painting a creature and wrong for labelling one.
  *
- * `ui/packages/ui/src/tokens.css:258-262` states the estate's rule for exactly this case: "never
+ * `ui/packages/ui/src/tokens.css` states the estate's rule for exactly this case: "never
  * colour alone: every status mark ships icon + label + colour". So a type in this client is
  * ALWAYS a generated icon plus its written name; the hue is a tint behind them and carries no
  * information on its own. `typeChip()` is the single constructor for that, it cannot produce a
