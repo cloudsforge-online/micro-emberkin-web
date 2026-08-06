@@ -44,13 +44,13 @@ export function WardrobePage() {
     return <Loading label="Checking what you own" />
   }
   if (save.status === 'failed') {
-    return <Failed notice={save.notice} title="Your save could not be read" />
+    return <Failed notice={save.notice} title="We could not read your game" />
   }
   if (save.status === 'absent') {
     return (
       <section className="ek-page">
         <h1>Wardrobe</h1>
-        <p>You have not begun. Cosmetics are worn by a Warden, and you do not have one yet.</p>
+        <p>You have not started a game. Somebody has to wear these, and you have no Warden yet.</p>
       </section>
     )
   }
@@ -74,17 +74,17 @@ export function WardrobePage() {
       const notice =
         err instanceof ApiError && err.code === 'entitlements_unavailable'
           ? {
-              message: 'We cannot check your purchases right now, so nothing was changed. Try again shortly.',
+              message: 'We cannot reach the record of what you have bought, so we changed nothing rather than guess. Try again shortly.',
               requestId: err.requestId,
               forbidden: false,
             }
           : err instanceof ApiError && err.code === 'cosmetic_not_owned'
             ? {
-                message: 'Your account does not own that. Nothing was changed.',
+                message: 'Your account does not have that one. Nothing changed.',
                 requestId: err.requestId,
                 forbidden: true,
               }
-            : noticeFor(err, 'That could not be equipped.')
+            : noticeFor(err, 'That would not go on.')
       setFailure(notice)
     } finally {
       setBusy(null)
@@ -96,16 +96,17 @@ export function WardrobePage() {
       <header className="ek-page__head">
         <h1>Wardrobe</h1>
         <p className="ek-page__lede">
-          Everything here changes how the game looks. <strong>None of it changes a single number</strong> —
-          not a stat, not a catch rate, not a Resonance gain. That is a rule of the game, not a
-          promise of this page.
+          Everything in here is about how the game looks.{' '}
+          <strong>Not one item touches a number</strong> — not a stat, not a catch rate, not a
+          Resonance gain. That is a rule of the game, not a promise this page is making on its
+          behalf. What you own sits on your Forge Worlds account, so it is yours in every title.
         </p>
       </header>
 
       {entitlements.status === 'failed' && entitlements.error ? (
         <Failed
           notice={entitlements.error}
-          title="We could not check what you own"
+          title="We could not check what you have bought"
           onRetry={() => void reloadEntitlements()}
         />
       ) : (

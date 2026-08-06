@@ -16,6 +16,20 @@ export interface RouteDef {
   readonly path: string
   /** The label in the persistent HUD's navigation. Null keeps it out of the nav. */
   readonly nav: string | null
+  /**
+   * The page's own name, for a `<title>` and for a list of destinations — declared ONLY where
+   * `nav` is null.
+   *
+   * `nav: null` means "keep it out of the persistent navigation", which is a different claim from
+   * "this page has no name", and the two were being conflated. `/credits` is the one route that is
+   * both: it is a real, linkable, public page and it is not a game section, so the not-found page
+   * offered it to a lost reader as the literal string `/credits` (`route.nav ?? route.path`) and
+   * the document title would have called it "Emberkin" like every other address.
+   *
+   * Six of the seven routes leave this undefined, because for them `nav` already IS the name and a
+   * second copy of it is a second thing to keep in step. Read through {@link pageTitle}.
+   */
+  readonly title?: string
   /** A one-line description, used by the not-found page to offer somewhere to go. */
   readonly blurb: string
   /** Requires a session. Not a security boundary — the service checks every token. */
@@ -26,43 +40,44 @@ export const ROUTES: readonly RouteDef[] = [
   {
     path: '/',
     nav: 'Play',
-    blurb: 'The battle view, your region, and what your Kin are doing.',
+    blurb: 'Where you are, what is out there, and the fight itself.',
     protected: true,
   },
   {
     path: '/party',
     nav: 'Party',
-    blurb: 'Your six, with their Resonance, Temperament and bond history.',
+    blurb: 'The Kin travelling with you, how deep each bond runs, and which way it leans.',
     protected: true,
   },
   {
     path: '/dex',
     nav: 'Dex',
-    blurb: 'All fifty Kin, what they are made of, and which you have met.',
+    blurb: 'Every Kin in the world, what they are made of, and the ones you have run into.',
     protected: false,
   },
   {
     path: '/satchel',
     nav: 'Satchel',
-    blurb: 'Items you are carrying.',
+    blurb: 'What you have on you, and what each thing does in a fight.',
     protected: true,
   },
   {
     path: '/wardrobe',
     nav: 'Wardrobe',
-    blurb: 'Cosmetics you own. None of them changes a number.',
+    blurb: 'What you can wear. None of it touches a number, and it follows your account everywhere.',
     protected: true,
   },
   {
     path: '/settings',
     nav: 'Settings',
-    blurb: 'Motion, contrast, and what this build is talking to.',
+    blurb: 'Motion, spacing, sound, and where this page sends its requests.',
     protected: false,
   },
   {
     path: '/credits',
     nav: null,
-    blurb: 'Where the art came from, and how it was made.',
+    title: 'Credits',
+    blurb: 'Who made the art, how, and what is still standing in for something better.',
     protected: false,
   },
 ]
@@ -91,4 +106,55 @@ export const DEEP_LINK_PATH = '/dex'
 
 export function routeFor(path: string): RouteDef | undefined {
   return ROUTES.find((r) => r.path === path)
+}
+
+/**
+ * What to call a page — in a `<title>`, and in a list of somewhere-to-go.
+ *
+ * The navigation label where there is one, the declared {@link RouteDef.title} where there is not,
+ * and the path as a last resort so this is a total function rather than one with a `string |
+ * undefined` return that every caller has to re-decide. The last branch is unreachable today and is
+ * meant to stay that way: a route added with neither name shows its own address, which is ugly
+ * enough to get fixed and honest enough not to invent a name for it.
+ */
+export function pageTitle(route: RouteDef): string {
+  return route.nav ?? route.title ?? route.path
+}
+
+/**
+ * The addresses a crawler is invited to, and the only ones this surface's sitemap lists.
+ *
+ * ── The rule, and the one exception to it ─────────────────────────────────────────────────────
+ *
+ * A `protected` route redirects a signed-out reader to hub's sign-in (`ProtectedRoute` in
+ * lib/auth.tsx), so a crawler is handed a sign-in journey rather than a page. `/party`, `/satchel`
+ * and `/wardrobe` are therefore `noindex, nofollow`: they are one player's own screens, they carry
+ * nothing a stranger can read, and a search result that lands on a redirect is a bad result.
+ *
+ * `/` IS protected and IS listed anyway, and that is deliberate rather than an oversight. It is
+ * this surface's front door, and the ESTATE'S OWN SITEMAP already publishes it: `emberkin` is
+ * `servesUi: true` in the registry, so `SITEMAP_SURFACES` in @cloudsforge/ui/sitemap includes it
+ * and the apex invites crawlers to `https://emberkin.<apex>`. That module's header states the rule
+ * this obeys — "a sitemap is an invitation and a robots directive is an instruction, and the two
+ * must not disagree" — so a `noindex` here would put this repository in direct contradiction with
+ * the front door the marketing site publishes for it. The address is the title's identity; what is
+ * behind it needing a session does not change that.
+ *
+ * `/dex`, `/settings` and `/credits` need no exception: they are public, they render for a
+ * signed-out reader, and `/dex` in particular is the fifty-Kin roster, which is the page somebody
+ * searching for this game is actually looking for.
+ */
+export const PUBLIC_PATHS: readonly string[] = ROUTES.filter(
+  (r) => r.path === '/' || !r.protected,
+).map((r) => r.path)
+
+/**
+ * May a crawler index this address?
+ *
+ * Takes a pathname rather than a route so the catch-all answers too: an address this app does not
+ * own is served with a 404 and the not-found page inside it, and that page must not be indexed
+ * whatever nginx said about it.
+ */
+export function indexable(pathname: string): boolean {
+  return PUBLIC_PATHS.includes(pathname)
 }

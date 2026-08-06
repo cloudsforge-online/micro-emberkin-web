@@ -29,7 +29,7 @@ export function SatchelPage() {
     return (
       <section className="ek-page">
         <h1>Satchel</h1>
-        <p>You have not begun, so there is nothing to carry yet.</p>
+        <p>You have not started a game, so you are carrying nothing.</p>
       </section>
     )
   }
@@ -52,7 +52,7 @@ export function SatchelPage() {
       </header>
 
       {ids.length === 0 ? (
-        <p className="ek-empty">Your satchel is empty.</p>
+        <p className="ek-empty">Nothing in your satchel.</p>
       ) : (
         ORDER.filter((category) => grouped.has(category)).map((category) => (
           <section key={category} className="ek-satchel__group">
@@ -65,7 +65,7 @@ export function SatchelPage() {
                     <span className="ek-satchel__name">{itemName(id)}</span>
                     <span className="ek-satchel__count cf-num">×{inventory[id]}</span>
                     <span className={`ek-satchel__effect${effect ? '' : ' ek-muted'}`}>
-                      {effect ?? 'This build does not know what this does.'}
+                      {effect ?? 'This build has no description for that one.'}
                     </span>
                   </li>
                 )
@@ -76,9 +76,9 @@ export function SatchelPage() {
       )}
 
       <p className="ek-note">
-        Items are spent inside a battle, by choosing them on a turn. There is no route that changes
-        the satchel outside one, so this screen does not offer a button that would have nowhere to
-        send the request.
+        You use an item by picking it on a turn during a fight. Nothing outside a fight can change
+        what is in here, so this screen gives you no buttons — they would have nowhere to send
+        their request.
       </p>
     </section>
   )

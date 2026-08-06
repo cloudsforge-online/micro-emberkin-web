@@ -66,16 +66,23 @@ import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloud
  */
 export const PRODUCT: SurfaceKey = 'worlds'
 /**
- * The surface this application IS, for the footer. **Deliberately not `'worlds'`.**
+ * The surface this application IS. **Deliberately not `'worlds'`.**
  *
  * The two constants answer two different questions and collapsing them would make one of them
  * wrong. `PRODUCT` is what the BAR marks current, and the switcher is a list of platforms a
  * player chooses between — Emberkin is played through Forge Worlds, so `worlds` is the honest
- * highlight there. The FOOTER lists surfaces, and Emberkin is one: it has its own registry row and
- * its own hostname (`emberkin` in @cloudsforge/ui's surfaces.ts). So "you are here" in the footer is
- * Emberkin, and the footer's closing line reads Emberkin's own blurb rather than Forge Worlds'.
+ * highlight there. This one is IDENTITY: Emberkin has its own registry row and its own hostname
+ * (`emberkin` in @cloudsforge/ui's surfaces.ts), so "you are here" is Emberkin.
+ *
+ * It was called `FOOTER_SURFACE`, which named its only caller rather than what it means, and the
+ * name stopped being true the moment a second caller appeared: `DocumentMeta` in
+ * components/shell.tsx passes it to `surfaceMeta()`, which is what puts "Emberkin" and Emberkin's
+ * own blurb in the `<title>`, the description and every Open Graph tag. Passing `PRODUCT` there
+ * would have titled every page of this game "Forge Worlds" and described it as "Ninety Days After,
+ * and what follows it" — a different title, on the wrong surface. The registry holds Emberkin's own
+ * name and blurb; this is the key that reaches them.
  */
-export const FOOTER_SURFACE: SurfaceKey = 'emberkin'
+export const SURFACE: SurfaceKey = 'emberkin'
 
 
 /** The name reported to the observability ingest and shown in error copy. */

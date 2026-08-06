@@ -71,7 +71,7 @@ export function SettingsPage() {
                   ? `Follow my device (currently ${systemReduce ? 'reduced' : 'full motion'})`
                   : value === 'on'
                     ? 'Always reduce'
-                    : 'I did not ask for reduced motion'}
+                    : 'I did not ask for less motion'}
               </span>
             </label>
           ))}
@@ -81,8 +81,8 @@ export function SettingsPage() {
           {prefs.reduceMotion === 'off' && systemReduce ? (
             <>
               {' '}
-              Your device asks for reduced motion, and that wins: "I did not ask for it" is not the
-              same as "overrule my device".
+              Your device is asking for less motion and we are honouring it. Saying you did not ask
+              for it is not the same as telling us to overrule the machine you are on.
             </>
           ) : null}
         </p>
@@ -96,7 +96,7 @@ export function SettingsPage() {
             checked={prefs.roomyHud}
             onChange={(e) => update({ ...prefs, roomyHud: e.target.checked })}
           />
-          <span>More room between HUD elements</span>
+          <span>More space between the things on screen</span>
         </label>
         <label className="ek-check">
           <input
@@ -109,11 +109,11 @@ export function SettingsPage() {
       </section>
 
       <section className="ek-settings__group">
-        <h2>What this build is talking to</h2>
+        <h2>Where this page sends its requests</h2>
         <p className="ek-note">
-          Resolved from the address this page was served on, every time a request is made. There is
-          no environment baked into this bundle, which is why one image serves localhost, a preview
-          deployment and production.
+          These are worked out from the address you are reading this on, each time a request goes
+          out. No environment is baked into the build, which is how one image can serve your laptop,
+          a preview and the live site without being rebuilt.
         </p>
         <dl className="ek-hosts">
           <dt>Emberkin</dt>

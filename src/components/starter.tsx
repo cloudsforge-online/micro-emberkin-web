@@ -48,8 +48,8 @@ export function StarterChoice() {
       <section className="ek-page">
         <h1>Emberkin</h1>
         <p>
-          The starter Kin are described by content this build could not load, so there is nothing
-          honest to offer you to choose between. Reload, or try again shortly.
+          We could not load the descriptions of the Kin you would choose between, and offering
+          you three blanks would not be a choice. Reload the page, or come back shortly.
         </p>
       </section>
     )
@@ -62,14 +62,15 @@ export function StarterChoice() {
       <div className="ek-start__panel">
         <h1>Begin</h1>
         <p className="ek-start__lede">
-          A Warden does not command a Kin; they bond with one. What that bond becomes —{' '}
-          <strong>Resonance</strong>, its lean towards <strong>Harmony or Ferocity</strong>, the{' '}
-          <strong>Sync</strong> you build in a fight — decides what your Kin can do and what it grows
-          into.
+          Emberkin is a game about the creatures you travel with rather than the ones you order
+          about. A Warden bonds with a Kin, and that bond does the work: how deep it runs
+          (<strong>Resonance</strong>), which way it leans (<strong>Harmony or Ferocity</strong>),
+          and the <strong>Sync</strong> the pair of you build during a fight. Between them they
+          decide what your Kin can do and what it becomes.
         </p>
 
         <label className="ek-field">
-          <span className="ek-field__label">What are you called?</span>
+          <span className="ek-field__label">What should we call you?</span>
           <input
             className="cf-input"
             value={name}
@@ -81,7 +82,7 @@ export function StarterChoice() {
         </label>
 
         <fieldset className="ek-start__starters">
-          <legend>Choose the Kin you begin with</legend>
+          <legend>Pick the Kin you set out with</legend>
           {starters.map((id) => {
             const species = data?.speciesById.get(id) ?? null
             const chosen = starter === id
@@ -112,10 +113,10 @@ export function StarterChoice() {
               </label>
             )
           })}
-          {starters.length === 0 ? <p className="ek-muted">No starters are listed in this build.</p> : null}
+          {starters.length === 0 ? <p className="ek-muted">This build lists no starting Kin.</p> : null}
         </fieldset>
 
-        {failure ? <Failed notice={failure} title="That did not start" /> : null}
+        {failure ? <Failed notice={failure} title="That did not get going" /> : null}
 
         <button
           type="button"
@@ -127,8 +128,9 @@ export function StarterChoice() {
         </button>
 
         <p className="ek-note">
-          Your save lives on the server, not in this browser. Sign in anywhere and it is the same
-          game.
+          Your game is kept on the server, not in this browser, so it is waiting on any machine
+          you sign in from. That account is a Forge Worlds account: the same one walks into Tessera
+          and Aetherholm, and what you own follows you into both.
         </p>
       </div>
     </section>

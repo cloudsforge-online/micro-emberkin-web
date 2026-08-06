@@ -194,8 +194,9 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
       <section className="ek-page">
         <h1>Somewhere unmapped</h1>
         <p>
-          Your save says you are in <code>{state.currentRegion}</code>, and this build has no data
-          for that region. Nothing is broken; this bundle is simply older or newer than your save.
+          Your game has you standing in <code>{state.currentRegion}</code>, and this build knows
+          nothing about that place. Nothing is broken — this page and your game are on different
+          versions of the world.
         </p>
       </section>
     )
@@ -217,8 +218,9 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
         <canvas ref={canvasRef} className="ek-play__canvas" aria-hidden="true" />
         {renderable === false ? (
           <p className="ek-play__nogl">
-            This browser cannot draw the 3D view, so the battle plays as its log below. Nothing is
-            missing from the game itself — the fight is resolved on the server either way.
+            Your browser will not draw the 3D view, so the fight plays out as the written log
+            below. You are missing nothing of the game: the battle is settled on the server
+            whichever way you watch it.
           </p>
         ) : null}
       </div>
@@ -230,9 +232,9 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
         </header>
 
         {!lead ? (
-          <p>You have no Kin able to battle. Visit your party.</p>
+          <p>None of your Kin can fight. Go and look at your party.</p>
         ) : !encounter || !enemySpecies ? (
-          <p>Nothing stirs here.</p>
+          <p>Nothing is moving out there.</p>
         ) : (
           <>
             <div className="ek-play__enemy">
@@ -257,7 +259,7 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
 
             <div className="ek-play__actions">
               <button type="button" className="cf-btn cf-btn--ember" disabled={busy} onClick={() => void submit()}>
-                {busy ? 'Resolving…' : 'Send it'}
+                {busy ? 'Fighting…' : 'Send it in'}
               </button>
               <button
                 type="button"
@@ -270,19 +272,20 @@ function BattleView({ onSaved }: { onSaved: (m: Awaited<ReturnType<typeof loadSa
                   setEncounter(rollEncounter(region))
                 }}
               >
-                Look for something else
+                Find something else
               </button>
             </div>
 
             <p className="ek-note">
-              The whole battle is submitted at once and resolved on the server, then played back
-              here. That is not a shortcut: the engine is deterministic, so the same seed produces
-              the same fight, and what you are watching is exactly what happened.
+              You plan the whole fight, send it in one go, and the server settles it before you see
+              any of it played back. That is not us cutting a corner. The engine gives the same
+              result for the same seed every time, so what you are watching is precisely what
+              happened, not an approximation of it.
             </p>
           </>
         )}
 
-        {failure ? <Failed notice={failure} title="That battle was not resolved" /> : null}
+        {failure ? <Failed notice={failure} title="That fight did not go through" /> : null}
 
         {result ? (
           <div className="ek-log" role="log" aria-live="polite">
@@ -326,9 +329,9 @@ function Aftermath({ delta, result }: { delta: BattleDelta; result: BattleResult
 
   return (
     <section className="ek-aftermath">
-      <h2>What that changed</h2>
+      <h2>What came of it</h2>
       {!somethingChanged ? (
-        <p>Nothing changed — no bond deepened, nothing new was recorded.</p>
+        <p>Nothing came of it. No bond deepened and nothing new went on the record.</p>
       ) : null}
 
       {delta.kin.map((k) => {
@@ -365,7 +368,7 @@ function Aftermath({ delta, result }: { delta: BattleDelta; result: BattleResult
 
       {result && result.unlocked.length > 0 ? (
         <div className="ek-aftermath__ach">
-          <h3>Recorded on your profile</h3>
+          <h3>Added to your Forge Worlds profile</h3>
           <ul>
             {result.unlocked.map((a) => (
               <li key={a.code}>
@@ -423,8 +426,8 @@ function TurnBuilder({
         ))}
         {intents.length === 0 && (
           <li className="ek-muted">
-            None chosen — the first move will be used each turn, which is what the server does with an
-            empty script.
+            Nothing chosen, so your first move gets used every turn. That is what the server does
+            with an empty plan.
           </li>
         )}
       </ol>
@@ -457,7 +460,7 @@ function TurnBuilder({
         >
           <span className="ek-turns__movename">Resonance Art</span>
           <span className="ek-turns__movemeta">
-            {hasArt ? 'Costs Sync, which builds during the battle.' : `Locked until Resonance 50 — currently ${resonance}.`}
+            {hasArt ? 'Costs Sync, which the two of you build up as the fight goes on.' : `Locked until Resonance 50 — currently ${resonance}.`}
           </span>
         </button>
 
@@ -472,7 +475,7 @@ function TurnBuilder({
 
         <button type="button" className="ek-turns__move" onClick={() => add({ kind: 'flee' })}>
           <span className="ek-turns__movename">Flee</span>
-          <span className="ek-turns__movemeta">Wild Kin only.</span>
+          <span className="ek-turns__movemeta">Only works on wild Kin.</span>
         </button>
       </div>
     </div>

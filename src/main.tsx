@@ -10,6 +10,8 @@
  *      the length of a network round trip.
  *   3. Render last.
  *
+ * Consent is primed between 1 and 2: see the note beside `initAnalytics()`.
+ *
  * Nothing here touches Three.js. The renderer is behind a dynamic import in `game/stage.ts` and is
  * fetched by the battle view alone, so a cold start that ends on the dex costs no renderer at all.
  */
@@ -18,11 +20,28 @@ import { createRoot } from 'react-dom/client'
 import '@cloudsforge/ui/tokens.css'
 import '@cloudsforge/ui/ui.css'
 import './styles.css'
+import { initAnalytics } from '@cloudsforge/ui/consent'
 import { App } from './app.tsx'
 import { bootstrapSession } from './lib/api.ts'
 import { initObs } from './lib/obs.ts'
 
 initObs()
+
+/*
+ * Consent Mode is primed with every category DENIED before anything else runs — two pushes onto a
+ * plain array, no request, no cookie, no script — and the analytics tag is loaded ONLY if this
+ * reader granted consent on a previous visit. A first-time player gets nothing until they press
+ * Accept, and nothing at all on a localhost origin, where `analyticsAllowedHere()` refuses.
+ *
+ * It goes here, second, rather than inside a component, because the denied default has to be in
+ * place before any tag could conceivably arrive; a default installed after a script has begun
+ * running is a race, and the losing branch of that race sets a cookie.
+ *
+ * Before `bootstrapSession()` for the same reason it is before the render: the hand-off is a
+ * network round trip, and a window in which a tag could arrive with storage permitted by default
+ * is a window this module exists to close.
+ */
+initAnalytics()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('#root is missing from index.html')

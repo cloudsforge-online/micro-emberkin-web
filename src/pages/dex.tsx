@@ -51,14 +51,14 @@ export function DexPage() {
             The counts are facts and are separated: how many the SERVICE knows, and how many this
             account has met. A single "12/50" would hide which number came from where.
           */}
-          The service knows <span className="cf-num">{dex.data?.length ?? 0}</span> Kin.
+          There are <span className="cf-num">{dex.data?.length ?? 0}</span> Kin in the world.
           {save.status === 'present' ? (
             <>
               {' '}
-              You have met <span className="cf-num">{seen.size}</span>.
+              You have run into <span className="cf-num">{seen.size}</span> of them.
             </>
           ) : save.status === 'absent' ? (
-            ' Sign in and begin to start recording what you meet.'
+            ' Sign in and start playing, and this fills in as you go.'
           ) : null}
         </p>
       </header>
@@ -111,7 +111,7 @@ export function DexPage() {
       </div>
 
       {entries.length === 0 ? (
-        <p className="ek-empty">No Kin match that.</p>
+        <p className="ek-empty">Nothing here matches that.</p>
       ) : (
         <ul className="ek-dex">
           {entries.map((entry) => {
@@ -128,9 +128,9 @@ export function DexPage() {
                 {local ? (
                   <p className="ek-dex__cat">{local.category}</p>
                 ) : (
-                  <p className="ek-dex__cat ek-muted">not in this build — only its name and types are known here</p>
+                  <p className="ek-dex__cat ek-muted">this build has no entry for it, so you get the name and the types and nothing else</p>
                 )}
-                <p className={`ek-dex__met${met ? '' : ' ek-muted'}`}>{met ? 'Met' : 'Not yet met'}</p>
+                <p className={`ek-dex__met${met ? '' : ' ek-muted'}`}>{met ? 'Seen it' : 'Not seen'}</p>
               </li>
             )
           })}
@@ -153,29 +153,29 @@ function ReconciliationNote() {
   const r = reconciliation
   return (
     <details className="ek-reconcile">
-      <summary>This build and the service do not describe the same roster</summary>
+      <summary>This page and the game do not agree on the roster</summary>
       <ul>
         {r.missingLocally.length > 0 && (
           <li>
-            <strong>{r.missingLocally.length}</strong> Kin the service knows are not in this build:{' '}
-            {r.missingLocally.map((m) => m.name).join(', ')}. Only their name, number and types are shown.
+            <strong>{r.missingLocally.length}</strong> Kin exist in the game but not in this build:{' '}
+            {r.missingLocally.map((m) => m.name).join(', ')}. You get their name, number and types, and no more.
           </li>
         )}
         {r.missingArt.length > 0 && (
           <li>
-            <strong>{r.missingArt.length}</strong> have no artwork here: {r.missingArt.join(', ')}.
+            <strong>{r.missingArt.length}</strong> have no picture here: {r.missingArt.join(', ')}.
           </li>
         )}
         {r.stale.length > 0 && (
           <li>
-            <strong>{r.stale.length}</strong> in this build are no longer in the service and are not offered:{' '}
+            <strong>{r.stale.length}</strong> in this build have left the game and are not offered:{' '}
             {r.stale.join(', ')}.
           </li>
         )}
         {r.typeDisagreement.length > 0 && (
           <li>
-            <strong>{r.typeDisagreement.length}</strong> disagree about types. The service's types are shown,
-            because damage is computed against them:{' '}
+            <strong>{r.typeDisagreement.length}</strong> disagree about types. We show the game&apos;s
+            answer, because that is what damage is worked out against:{' '}
             {r.typeDisagreement
               .map((d) => `${d.id} (here ${d.local.join('/')}, service ${d.service.join('/')})`)
               .join('; ')}
