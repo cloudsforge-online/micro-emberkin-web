@@ -11,7 +11,7 @@
  * from the same declaration the router and nginx are built from — a list that cannot go stale.
  */
 import { Link, useLocation } from 'react-router-dom'
-import { ROUTES } from '../lib/routes.ts'
+import { ROUTES, pageTitle } from '../lib/routes.ts'
 import { titleArt } from '../lib/art.ts'
 
 export function NotFoundPage() {
@@ -30,7 +30,10 @@ export function NotFoundPage() {
         <ul className="ek-notfound__routes">
           {ROUTES.map((route) => (
             <li key={route.path}>
-              <Link to={route.path}>{route.nav ?? route.path}</Link>
+              {/* `pageTitle`, not `route.nav ?? route.path`: `nav: null` means "not in the game
+                  navigation", not "has no name", and the difference was visible right here —
+                  /credits was offered to a lost reader as the string "/credits". */}
+              <Link to={route.path}>{pageTitle(route)}</Link>
               <span className="ek-muted"> — {route.blurb}</span>
             </li>
           ))}

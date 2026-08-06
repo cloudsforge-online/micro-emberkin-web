@@ -21,6 +21,7 @@
  * the very thing the client is forbidden to know.
  */
 import assert from 'node:assert/strict'
+import { MAIN_ID } from '@cloudsforge/ui'
 import { assertMounted, renderOnlyWithStubbedNetwork, type Stubs } from './browser.ts'
 import {
   assertAxeClean,
@@ -496,7 +497,12 @@ export const CATALOGUE: readonly Scenario[] = [
         try {
           await assertMounted(session)
           await assertLandmarks(session.page, path)
-          await assertSkipLink(session.page, path)
+          // `#cf-main`, read from the design system's own constant rather than typed. The shell
+          // used to hand-write `<main id="main">` beside an `<a href="#main">` and get the
+          // `tabIndex={-1}` half wrong; `SkipLink` and `MainRegion` now compose both from
+          // `MAIN_ID`, and passing that same export here means this assertion cannot be the thing
+          // that goes stale when the constant moves.
+          await assertSkipLink(session.page, path, `#${MAIN_ID}`)
         } finally {
           await session.close()
         }

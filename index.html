@@ -7,8 +7,21 @@
   `worlds`, because Emberkin is a Forge Worlds title and the registry has no `emberkin` key — see
   the header of src/lib/hosts.ts. `warm`, because the brand ground is #12100f: an ashen dark, warm
   and never blue, and the warm ramp is the one the generated art was painted against.
+
+  data-cf-scheme is the third of the three, added with @cloudsforge/ui 1.1. `auto` follows the
+  reader's operating system; `light` and `dark` force one. It is set here, statically, for the same
+  reason the other two are — a theme flash is worse than a theme nobody asked for.
+
+  A GAME CLIENT SERVING A LIGHT SCHEME IS NOT A CONTRADICTION, and the objection is worth answering
+  because this is the one surface in the estate where it can be raised. The 3D stage is a canvas:
+  it paints its own scene from its own materials and no token reaches it, so it looks the same in
+  either scheme. What follows the reader's system is the CHROME AROUND IT — the dex, the party
+  list, the satchel, the settings — which is a table, a list and a form, read in whatever light the
+  reader happens to be in. This surface previously pinned `color-scheme: dark` on `body` in
+  src/styles.css, which beat the token layer's per-scheme declaration on <html> and drew every
+  native control dark on a page that had decided to be light. That declaration is gone.
 -->
-<html lang="en-GB" data-cf-product="worlds" data-cf-substrate="warm">
+<html lang="en-GB" data-cf-product="worlds" data-cf-substrate="warm" data-cf-scheme="auto">
   <head>
     <meta charset="utf-8" />
     <!--
@@ -22,7 +35,19 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <meta name="colour-scheme" content="dark" />
+    <!--
+      `color-scheme`, spelled the way the standard spells it. This was `colour-scheme` — British,
+      correct English, and INERT: no browser has ever read that name, so the declaration meant to
+      tell the browser which form controls and scrollbars to draw did nothing at all. The warden
+      name field on the starter panel, the dex search box and the three settings radios were drawn
+      by the browser's own light defaults on a page that is ash-dark, for as long as this file has
+      existed.
+
+      Both schemes are declared rather than only `dark`, because `data-cf-scheme="auto"` above means
+      the token layer now resolves whichever palette the reader's system asks for. Declaring only
+      `dark` here would leave the chrome the browser draws disagreeing with the page around it.
+    -->
+    <meta name="color-scheme" content="dark light" />
     <meta
       name="description"
       content="Emberkin: Resonance — bond with Kin, and let the bond change what they become."
@@ -33,6 +58,31 @@
       rather than a configuration: it names the artefact, it does not tell it where it is running.
     -->
     <meta name="cf-release" content="dev" />
+    <!--
+      THE GOOGLE ANALYTICS MEASUREMENT ID, AND NOT THE GOOGLE ANALYTICS TAG.
+      ────────────────────────────────────────────────────────────────────────────────────────
+      There is deliberately no third-party analytics `<script src=…>` anywhere in this file, and
+      there must never be one — the tag's own domain is not even spelled out here, so that a grep
+      for it over this file returns nothing at all and the absence is checkable rather than
+      asserted. The stock snippet fetches that script and sets its cookie ON LOAD, before any
+      banner has been drawn, let alone answered; under ePrivacy Art. 5(3) an analytics cookie set
+      before consent is a violation that a banner underneath it does not cure.
+
+      It matters more here than on a page of prose, not less. A player is signed in, the client
+      carries their handle and their save, and this surface is played by children as readily as by
+      anyone else — so "we will tidy the analytics later" is the wrong order to do things in.
+      `@cloudsforge/ui/consent` injects the tag from exactly one place: the Accept button in
+      `CookieBanner`. See the header of that module for the whole argument.
+
+      It is a meta tag rather than a build-time environment variable because
+      test/no-build-time-config.test.ts greps for those and fails the build — an artefact with an
+      environment frozen into it is not the artefact that passed CI. This is the same mechanism
+      `cf-release` above already uses, and the ID is an identity rather than a configuration: it
+      names the property, it does not tell the bundle where it is running. An absent or empty value
+      means analytics is simply off, which is what a local `pnpm dev` gets — and so is every
+      localhost origin, because `analyticsAllowedHere()` refuses them by hostname.
+    -->
+    <meta name="cf-analytics" content="G-NB8DNLTKZQ" />
     <link rel="icon" type="image/png" href="/art/title/mark-1024x1024.png" />
     <!--
       The one preload. The title mark is the first thing painted on every cold start, and it is the

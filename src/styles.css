@@ -24,8 +24,18 @@ body {
   background: var(--cf-bg);
   color: var(--cf-fg);
   font-family: var(--cf-font-sans);
-  /* The bar is dark on every surface; the page follows the substrate. */
-  color-scheme: dark;
+  /*
+   * `color-scheme: dark` WAS HERE, AND IT WAS THE ONE THING BLOCKING A LIGHT SCHEME.
+   *
+   * A declaration on `body` beats `tokens.css`'s per-scheme declaration on `<html>` — that one is
+   * inside `[data-cf-scheme='light']` and `@media (prefers-color-scheme: light) [data-cf-scheme=
+   * 'auto']`, both of which match the root element and neither of which matches this one. So with
+   * `data-cf-scheme="auto"` now on `<html>`, the tokens would have flipped to the kiln ramp and
+   * every control the BROWSER draws — the warden name field, the dex search box, the three
+   * settings radios, the two checkboxes, the scrollbars — would have stayed dark on a cream page.
+   *
+   * It is gone. The scheme is declared once, in the token layer, in the place that knows.
+   */
 }
 
 .wt-main {
@@ -295,7 +305,20 @@ body {
   background-size: cover;
   background-position: center 35%;
   border-bottom: 1px solid var(--cf-line);
-  box-shadow: inset 0 0 0 100vmax rgb(18 16 15 / 88%);
+  /*
+   * The scrim over the region keyart, and it FOLLOWS THE SCHEME rather than being the brand ground
+   * spelled out in hex.
+   *
+   * It was `rgb(18 16 15 / 88%)` — #12100f at 88%, which is right in exactly one scheme. The text
+   * laid on it is `--cf-fg`, which on a light page is near-black; near-black on an 88% near-black
+   * scrim is the warden's name, the region and all six party slots rendered invisible. This is the
+   * one rule in this file that a literal colour genuinely broke rather than merely risked, and it
+   * only became reachable when `color-scheme: dark` came off `body` above.
+   *
+   * `--cf-bg-sunken` is already this element's `background-color`, so the scrim is the same
+   * surface at 88% and the keyart still shows through as texture in both schemes.
+   */
+  box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--cf-bg-sunken) 88%, transparent);
 }
 
 [data-ek-roomy='true'] .ek-hud {
@@ -442,8 +465,20 @@ body {
   margin: 0;
 }
 
+/*
+ * `--cf-warn-text`, not `--cf-viz-warn`. The rule beside `.wt-link` above makes the argument for
+ * the accent family; this is the same argument one token family over, and it is the family
+ * tokens.css says the estate got wrong most often.
+ *
+ * `--cf-viz-*` are CHART SERIES colours, validated at the 3:1 graphical floor for a bar or a line;
+ * `--cf-warn-text` is the 4.5:1 text step and is what a glyph drawn in a font is. It also differs
+ * per scheme where the viz role does not usefully: light resolves `--cf-warn-text` to #83571c
+ * (4.63:1 on the light well) where `--cf-viz-warn` resolves to #bb7e2c, tuned to sit in a chart.
+ * The border below stays `--cf-viz-warn` — a border is measured against the 3:1 floor and this one
+ * is doing the same job a series colour does.
+ */
 .ek-degraded__icon {
-  color: var(--cf-viz-warn, #f4a63c);
+  color: var(--cf-warn-text);
 }
 
 /* ----------------------------- pages ----------------------------- */
@@ -1182,7 +1217,10 @@ body {
   inset-inline: 0;
   margin: 0;
   padding: 0.6rem 0.8rem;
-  background: rgb(18 16 15 / 88%);
+  /* The same fix, for the same reason, as `.ek-hud`'s scrim: this is a caption laid over the
+     biome keyart, its text is `--cf-fg`, and a hard-coded #12100f ground made the ONE message a
+     player without a GPU is shown unreadable on a light page. */
+  background: color-mix(in srgb, var(--cf-bg-sunken) 88%, transparent);
   font-size: 0.8rem;
 }
 
@@ -1316,42 +1354,13 @@ body {
 }
 
 /* -----------------------------------------------------------------------
- * The skip link. Hidden until focused, and then unmistakably visible.
+ * `.ek-skip` WAS HERE, WITH ITS OWN reduced-motion GUARD. Both are gone with the markup they
+ * styled: the skip link is now `SkipLink` from @cloudsforge/ui, which brings `.cf-skip` — and,
+ * more to the point, targets a `<main>` that carries `tabIndex={-1}`, which the local one did not.
  *
- * `top` moves rather than `display` toggling, because a link that is
- * `display: none` is not focusable at all and a skip link that cannot be
- * reached by Tab is decoration. The focused position clears the shared bar
- * by its own height token, so it does not land underneath it.
+ * The guard is not lost with it. `ui.css` lists `.cf-skip` in its own
+ * `@media (prefers-reduced-motion: reduce)` block alongside every other animated primitive, so the
+ * finding BJ-A11Y-11 recorded here is honoured by the design system for every surface rather than
+ * by this one file for this one surface. A rule left behind after its element is deleted is dead
+ * weight the next reader has to prove is dead.
  * ------------------------------------------------------------------- */
-.ek-skip {
-  position: absolute;
-  left: var(--cf-space-sm);
-  top: -4rem;
-  z-index: 100;
-  padding: var(--cf-space-sm) var(--cf-space-xl);
-  border-radius: var(--cf-radius);
-  background: var(--cf-accent);
-  color: var(--cf-accent-ink);
-  font-weight: 600;
-  text-decoration: none;
-  transition: top var(--cf-speed) var(--cf-ease);
-}
-
-.ek-skip:focus {
-  top: calc(var(--cf-bar-h) + var(--cf-space-sm));
-}
-
-/*
- * The skip link does not slide for a reader who asked for less motion.
- *
- * `prefers-reduced-motion: reduce` is an accessibility setting rather than a taste — for some
- * readers motion causes nausea or triggers a vestibular episode — and this file already honours it
- * elsewhere. The skip link was the last thing on the surface still moving, which is only
- * discoverable by setting the preference and reading COMPUTED durations: the rule is right there
- * in the stylesheet and says nothing about who it applies to. Found by BJ-A11Y-11.
- */
-@media (prefers-reduced-motion: reduce) {
-  .ek-skip {
-    transition: none;
-  }
-}
