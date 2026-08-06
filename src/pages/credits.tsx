@@ -52,9 +52,9 @@ export function CreditsPage() {
       <h2>The art</h2>
       {failed ? (
         <p>
-          The asset manifest could not be read from this build, so the per-image provenance is not
-          available here. What is stated below about the images still holds: every one of them was
-          generated.
+          We could not read the asset list out of this build, so there is no per-image record to
+          show you. Everything said below about the pictures still stands: a model made all of
+          them.
         </p>
       ) : manifest ? (
         <>
@@ -73,7 +73,7 @@ export function CreditsPage() {
           </dl>
         </>
       ) : (
-        <p className="ek-muted">Reading the manifest…</p>
+        <p className="ek-muted">Reading the asset list…</p>
       )}
 
       <ul className="ek-credits__sets">
@@ -86,27 +86,41 @@ export function CreditsPage() {
           ))}
       </ul>
 
-      <h2>The 3D, stated honestly</h2>
+      <h2>What is 3D and what is not</h2>
       <p>
-        The image generator produced <strong>two-dimensional art</strong>: portraits, type icons,
-        region keyart, the title lockup and the interface chrome — which is most of what you read
-        while playing. The creature models you see in a battle are <strong>not</strong> generated.
-        They are the procedural glTF bakes carried forward from the game this client is descended
-        from, built from code rather than sculpted, and they remain placeholders by their own art
-        bible's admission.
+        A model drew the <strong>flat art</strong>: the portraits, the element icons, the region
+        paintings, the title lockup and the interface itself, which between them are most of what
+        you look at. The creatures moving during a fight are a different matter. Those are built by
+        code rather than sculpted by anyone, carried across from the game Emberkin grew out of, and
+        their own art notes call them stand-ins.
       </p>
       <p>
-        The rendering layer loads them through an asset seam rather than building them inline, so
-        real models can replace them later without touching a line of gameplay code. That seam is
-        the reason the caveat is a scope note rather than a rewrite waiting to happen.
+        They are loaded through a boundary rather than wired into the game, which means proper
+        models can be dropped in without anybody touching how the game plays. That is why this is
+        an honest note about scope and not a rewrite waiting to happen.
       </p>
 
       <h2>The game</h2>
       <p>
-        Emberkin is descended from KINDRED: Resonance. The battle engine, the fifty species, the
-        forty-seven moves, the nine elements and the Resonance / Temperament / Sync system are its
-        design, ported and kept. Battles are resolved by the server from a seed, so a battle log
-        replays exactly.
+        Emberkin comes out of KINDRED: Resonance, and keeps its work: the battle engine, the fifty
+        species, the forty-seven moves, the nine elements, and the Resonance, Temperament and Sync
+        system that ties them together. Fights are settled on the server from a seed, which is why
+        a log replays move for move rather than approximately.
+      </p>
+
+      <h2>Where this sits</h2>
+      <p>
+        Emberkin is one title inside Forge Worlds. The account you play it with also walks into
+        Tessera and Aetherholm, and it carries one inventory, one set of achievements and one
+        season record between them. Nothing you win here is stranded in here.
+      </p>
+      <p>
+        Underneath all of it is Hearth, a chain that runs a real EVM. Solidity contracts deploy to
+        it, and MetaMask, ethers, viem, Hardhat and Foundry work against it without special cases,
+        because it is held to Ethereum&apos;s published test vectors. Its currency, EMBER, is what
+        the wider ecosystem pays in, and you can mine it from a browser tab on a key that never
+        leaves your machine. EMBER carries no monetary value, and nothing here is an offer to buy
+        or sell anything.
       </p>
     </section>
   )

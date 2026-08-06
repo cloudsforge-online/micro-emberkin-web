@@ -31,7 +31,7 @@ export function PartyPage() {
     return (
       <section className="ek-page">
         <h1>Party</h1>
-        <p>You have not begun. Start a game on the Play screen and your first Kin will appear here.</p>
+        <p>You have not started. Begin on the Play screen and the Kin you choose turns up here.</p>
       </section>
     )
   }
@@ -49,7 +49,7 @@ export function PartyPage() {
       </header>
 
       {state.party.length === 0 ? (
-        <p className="ek-empty">No Kin are with you.</p>
+        <p className="ek-empty">Nobody is travelling with you.</p>
       ) : (
         <ul className="ek-party">
           {state.party.map((kin, index) => (
@@ -59,9 +59,9 @@ export function PartyPage() {
       )}
 
       <p className="ek-note">
-        This screen reads the save; it does not write it. Reordering, renaming and moving a Kin to
-        the box are not things the service offers a route for, so this page does not pretend to
-        offer them.
+        This screen reads your game and never writes to it. Reordering your party, renaming a Kin
+        and moving one to the box are not things the game lets anybody do, so you will not find
+        buttons here pretending otherwise.
       </p>
 
       {state.box.length > 0 && (
@@ -143,7 +143,7 @@ function PartyCard({ kin, slot }: { kin: KinSave; slot: number }) {
 
       {species && species.evolutions.length > 0 ? (
         <div className="ek-party__evo">
-          <h3>What it may become</h3>
+          <h3>What it might grow into</h3>
           <ul>
             {species.evolutions.map((evo) => {
               const into = content.data?.speciesById.get(evo.into)

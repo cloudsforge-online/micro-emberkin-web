@@ -75,7 +75,7 @@ export function Failed({
       <p className="wt-state__hint">{notice.message}</p>
       {notice.requestId && (
         <p className="wt-state__meta">
-          Quote this to support:{' '}
+          Give support this reference:{' '}
           <code className="cf-num wt-reqid">{notice.requestId}</code>
         </p>
       )}

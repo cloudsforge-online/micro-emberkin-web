@@ -244,7 +244,7 @@ export const CATALOGUE: readonly Scenario[] = [
         // ARE the product decision, and a paraphrase softening "not a stat, not a catch rate, not a
         // Resonance gain" into "cosmetic only" is exactly the regression worth catching.
         assert.ok(
-          text.includes('None of it changes a single number'),
+          text.includes('Not one item touches a number'),
           `the lede does not state the rule. Page says: ${text.slice(0, 700)}`,
         )
         assert.ok(
