@@ -20,6 +20,7 @@
  */
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { ScrollToTop } from './components/scroll-to-top.tsx'
 import { AppShell } from './components/shell.tsx'
 import { Loading } from './components/states.tsx'
 import { AuthProvider, ProtectedRoute } from './lib/auth.tsx'
@@ -37,6 +38,7 @@ const PlayPage = lazy(async () => ({ default: (await import('./pages/play.tsx'))
 export function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <GameProvider>
           <Routes>
