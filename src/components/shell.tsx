@@ -16,10 +16,11 @@ import {
   CookieBanner,
   MainRegion,
   SkipLink,
+  miningOnHub,
 } from '@cloudsforge/ui'
 import { applyHead, surfaceMeta } from '@cloudsforge/ui/seo'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { PRODUCT, SURFACE } from '../lib/hosts.ts'
+import { PRODUCT, SURFACE, hosts } from '../lib/hosts.ts'
 import { useSession } from '../lib/auth.tsx'
 import { useGame } from '../lib/game.tsx'
 import { NAV, indexable, pageTitle, routeFor } from '../lib/routes.ts'
@@ -44,7 +45,25 @@ export function AppShell() {
         `MainRegion` below is the half that was missing; the two now come from one constant.
       */}
       <SkipLink>Skip to the page</SkipLink>
-      <CloudsForgeBar current={PRODUCT} account={account} onSignIn={() => signIn()} onSignOut={signOut} />
+      {/*
+        `mining` beside the account, as on the other nine player-facing surfaces. This one was
+        missed when the control was added — measured 2026-08-10: eleven of eighteen frontends
+        passed it and this was the only surface that mounts the bar, carries a real session and
+        did not. A control that is present on nine surfaces and absent on the tenth is the same
+        "where has it gone" the subpage was.
+
+        `miningOnHub()` and not a live session: the miner is a WebSocket and two Web Workers on
+        ONE origin, and `hub.<apex>` is not this one. So this renders an anchor to the surface
+        that can start it. `hosts().hub` rather than a literal, because this bundle is served from
+        localhost, from a preview host and from the apex.
+      */}
+      <CloudsForgeBar
+        current={PRODUCT}
+        account={account}
+        onSignIn={() => signIn()}
+        onSignOut={signOut}
+        mining={miningOnHub(hosts().hub)}
+      />
 
       {/*
         Sticky at exactly `var(--cf-bar-h)` — the bar's own height token, not a number copied out

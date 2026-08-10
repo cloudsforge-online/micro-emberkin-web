@@ -21,7 +21,7 @@
  * the very thing the client is forbidden to know.
  */
 import assert from 'node:assert/strict'
-import { MAIN_ID } from '@cloudsforge/ui'
+import { HUB_MINE_PATH, MAIN_ID, NOT_PAID_CLAUSE } from '@cloudsforge/ui'
 import { assertMounted, renderOnlyWithStubbedNetwork, type Stubs } from './browser.ts'
 import {
   assertAxeClean,
@@ -31,6 +31,7 @@ import {
   type KnownViolation,
 } from './axe.ts'
 import type { Scenario } from './scenario.ts'
+import { ROUTES } from '../../src/lib/routes.ts'
 
 /*
  * Empty, and it was established by trying to fill it.
@@ -126,6 +127,29 @@ const BASE: Stubs = [
 ]
 
 const OWNED = ['/', '/party', '/dex', '/satchel', '/wardrobe', '/settings', '/credits']
+
+/**
+ * The addresses that hand a signed-out reader a sign-in journey instead of a page, DERIVED from
+ * `src/lib/routes.ts` rather than written out again.
+ *
+ * Four of the seven, today. A second hand-kept list here would go stale the first time a page is
+ * gated or ungated, and it would go stale silently — the scenario below would keep passing while
+ * quietly checking the wrong halves of the surface.
+ */
+const GATED: readonly string[] = ROUTES.filter((r) => r.protected).map((r) => r.path)
+
+/**
+ * A sign-in destination that answers `204 No Content`, which leaves the browser where it is.
+ *
+ * `ProtectedRoute` (src/lib/auth.tsx) sends an anonymous reader to Hub's sign-in from an effect, so
+ * a gated address renders this app's chrome for an instant and is then replaced by another origin's
+ * document — with {@link SIGNIN_STANDIN} the harness settles on the stand-in HTML and there is no
+ * bar left to look at. A navigation that answers 204 never commits, so the hand-off is genuinely
+ * attempted, the reader is genuinely signed out, and the screen they are looking at while it
+ * happens stays on screen long enough to assert against. Chromium records the abandoned navigation
+ * as `net::ERR_ABORTED`; that is arranged, so it is tolerated by name and not by widening anything.
+ */
+const SIGNIN_HELD = { status: 204 }
 
 export const CATALOGUE: readonly Scenario[] = [
   /* ---- doc 22 §5.1 ---------------------------------------------------- */
@@ -401,6 +425,172 @@ export const CATALOGUE: readonly Scenario[] = [
         assert.equal(redeem.url.includes('handoff-code-123'), false, 'the code was put in a URL')
       } finally {
         await session.close()
+      }
+    },
+  },
+  /**
+   * THE OFFER OF BROWSER MINING IS IN THE COMPANY BAR, ON EVERY ADDRESS THIS CLIENT SERVES.
+   *
+   * `mining` is an OPT-IN prop on `CloudsForgeBar`. A bar rendered without it is a perfectly valid
+   * bar, so a shell that never passes it is indistinguishable from one that does — by typecheck, by
+   * lint, and by every other test in this repository. Measured on 2026-08-10, eleven of eighteen
+   * frontends passed it, and of the seven that did not this was the ONLY one that mounts the bar,
+   * carries a real session and could therefore have offered it. The other six either render no bar
+   * at all or have no reader to offer it to. So the gap here was not a category difference; it was
+   * one line missing from `src/components/shell.tsx`, and nothing could see it.
+   *
+   * ── Why this surface is the awkward one to keep it on ─────────────────────────────────────────
+   *
+   * The chrome here is three stacked strips, not one: `CloudsForgeBar`, then this app's own game
+   * nav, then the persistent HUD (`src/components/hud.tsx`). Two of the three are this repository's
+   * furniture and exist on no other surface in the estate, and they are the obvious-looking place
+   * to put a game-shaped control. Putting it there would read fine in a screenshot and would move
+   * the control to a different position on the one surface a player spends the most time on — which
+   * is the "where has it gone" the control was created to end. So what is asserted is not merely
+   * that a mining control exists somewhere on the page: it is that there is exactly ONE in the whole
+   * document, that it is inside `.cf-bar`, and that nothing has been slipped between it and the
+   * account.
+   *
+   * ── And why the signed-out gated screens are checked, not just the pages ──────────────────────
+   *
+   * Four of this client's seven routes are behind `ProtectedRoute` (src/lib/auth.tsx) and render a
+   * hand-off to Hub's sign-in rather than a page. A signed-out player's first screen here is
+   * therefore usually NOT a page, and chrome that only arrives once a save has loaded would be
+   * missing from exactly the screens somebody new sees. The 404 shell is checked for the same
+   * reason from the other end: nginx answers 404 and still serves this shell (BJ-EMBERKIN-404), and
+   * a lost reader is the one who most needs a way onwards.
+   *
+   * Deleting the one line in `src/components/shell.tsx` turns this red and leaves the rest of the
+   * suite green, which is the mutation proof.
+   *
+   * ── What this does NOT assert ─────────────────────────────────────────────────────────────────
+   *
+   * What the control DRAWS — micro-ui's `mining.test.ts` owns that — and what pressing it does,
+   * which is asserted in micro-hub-web, the bundle that actually mounts the miner. A mining session
+   * is a WebSocket and two Web Workers pinned to ONE origin, and `hub.<apex>` is not this one. What
+   * this client owes a player is that the offer exists, that it is where they will look for it, and
+   * that it is a LINK they can middle-click rather than an `onClick` no link check can see.
+   */
+  {
+    id: 'BJ-MINE-BAR',
+    title: 'the offer of browser mining is beside the account, in the bar, on every address this client serves',
+    tier: 2,
+    asserts: 'presentation',
+    async run(surface) {
+      /*
+       * Every owned route with a session; the 404 shell, which this app does not own and still
+       * renders; and every gated route with NO session, which is the sign-in hand-off screen rather
+       * than a page. The three together are the whole of what a browser can be pointed at here.
+       */
+      const addresses = [
+        ...OWNED.map((path) => ({ path, signedIn: true })),
+        { path: '/nope', signedIn: true },
+        ...GATED.map((path) => ({ path, signedIn: false })),
+      ]
+
+      for (const { path, signedIn } of addresses) {
+        const where = signedIn ? path : `${path} (signed out)`
+        const session = await renderOnlyWithStubbedNetwork(surface.origin, {
+          path,
+          ...(signedIn ? { storage: SIGNED_IN } : {}),
+          stubs: signedIn ? BASE : [['/account/login', SIGNIN_HELD], ...BASE],
+        })
+        try {
+          await assertMounted(session, signedIn ? {} : { tolerateFailures: [/\/account\/login/] })
+
+          // ONE, in the whole document, and it is in the company bar rather than in this app's own
+          // game nav or its HUD. Counted document-wide first: a second copy grown in a strip below
+          // would satisfy a `.cf-bar .cf-mine` check on its own and would still be two controls
+          // offering the same thing.
+          const anywhere = await session.page.$$('.cf-mine')
+          assert.equal(
+            anywhere.length,
+            1,
+            `${where}: expected exactly one mining control in the document, found ${anywhere.length}`,
+          )
+          const found = await session.page.$$('.cf-bar .cf-mine')
+          assert.equal(
+            found.length,
+            1,
+            `${where}: the mining control is not in the company bar (found ${found.length} there)`,
+          )
+          const mine = found[0] as NonNullable<(typeof found)[number]>
+
+          /*
+           * An anchor, and pointed at HUB. Getting the surface wrong is the likely mistake rather
+           * than a hypothetical one: a control that offered mining and led back to the page the
+           * player is already on is indistinguishable from a working one in every screenshot.
+           */
+          assert.equal(
+            await mine.evaluate((el) => el.tagName),
+            'A',
+            `${where}: the mining control is not a link`,
+          )
+          const href = (await mine.getAttribute('href')) ?? ''
+          assert.ok(
+            href.endsWith(HUB_MINE_PATH),
+            `${where}: the mining control points at ${href}, not at ${HUB_MINE_PATH}`,
+          )
+          assert.notEqual(
+            new URL(href, surface.origin).origin,
+            new URL(surface.origin).origin,
+            `${where}: the mining control leads back to this client instead of to Forge Hub`,
+          )
+
+          /*
+           * DOCUMENT ORDER, NOT CSS. A stylesheet can put a box anywhere on the row — `order:` and
+           * `flex-direction: row-reverse` both do it without moving a node — so reading the
+           * rendered geometry would pass for a control a keyboard player reaches last, after the
+           * switcher, three strips of chrome and the whole page. "Beside the account" is a claim
+           * about where you find it.
+           *
+           * The `.cf-sr` skipped between them is the control's own description span, which
+           * `MiningControl` renders as a SIBLING so it is a description and not part of the
+           * accessible name (`ui/packages/ui/src/mining.tsx`).
+           *
+           * The last control is the account, and it is a different element in the two states this
+           * scenario visits: the menu when there is a session, the sign-in button when there is
+           * not. Both are accepted; anything else is something new that has pushed in.
+           */
+          const placement = await session.page.evaluate(() => {
+            const inner = document.querySelector('.cf-bar__inner')
+            if (!inner) return null
+            const kids = [...inner.children]
+            const mineAt = kids.findIndex((el) => el.classList.contains('cf-mine'))
+            const last = kids.length - 1
+            return {
+              between: kids.slice(mineAt + 1, last).filter((el) => !el.classList.contains('cf-sr')).length,
+              account: kids[last]?.className ?? '',
+            }
+          })
+          assert.ok(placement, `${where}: the bar has no inner row`)
+          assert.equal(placement.between, 0, `${where}: something now sits between mining and the account`)
+          assert.match(
+            placement.account,
+            /cf-pop|cf-btn--ember/,
+            `${where}: the last control in the bar is not the account (${placement.account})`,
+          )
+
+          /*
+           * And it promises nothing. `pool/src/payouts.ts` states it — "PAYOUTS ARE OFF" — and
+           * `miningOnHub()` defaults `payoutsImplemented` to false rather than asking a bundle that
+           * has never spoken to the pool to assert otherwise. Asserted against the exported
+           * constant, so rewording the sentence in micro-ui does not leave this checking a string
+           * that no longer appears anywhere.
+           */
+          const clause = await session.page.evaluate(() => {
+            const el = document.querySelector('.cf-bar .cf-mine')
+            const id = el?.getAttribute('aria-describedby') ?? ''
+            return document.getElementById(id)?.textContent ?? null
+          })
+          assert.ok(clause, `${where}: the mining control carries no description for a screen reader`)
+          assert.ok(
+            clause.includes(NOT_PAID_CLAUSE),
+            `${where}: the mining control does not carry the not-paid clause`,
+          )
+        } finally {
+          await session.close()
+        }
       }
     },
   },
