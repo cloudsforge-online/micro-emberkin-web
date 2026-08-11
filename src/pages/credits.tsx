@@ -114,13 +114,38 @@ export function CreditsPage() {
         Tessera and Aetherholm, and it carries one inventory, one set of achievements and one
         season record between them. Nothing you win here is stranded in here.
       </p>
+      {/*
+        ── "EMBER CARRIES NO MONETARY VALUE" WAS TRUE WHEN IT WAS WRITTEN AND IS NOT NOW ─────────
+
+        On 2026-08-10 at 19:13:30Z the operator set an administered rate for EMBER through
+        `PUT /admin/prices/:asset`. Measured 2026-08-11, `GET /rates` answers EMBER with
+        `source: "administered"` and `sourceCount: 0`, beside eleven assets answering `market` with
+        `sourceCount: 4` — and hub prints a dollar figure against an EMBER balance. A player who
+        reads "no monetary value" here and then meets that figure has been told two incompatible
+        things by one company, and the number is the one they will believe (micro-org#365).
+
+        The sentence is not deleted. Deleting it leaves a page that mentions a currency and says
+        nothing about what it is worth, which is where this whole defect family starts. It is
+        replaced by the pair the estate settled on: name the price, then say whose it is,
+        immediately and in the same breath. `hub-web/src/components/estimate.tsx` renders that pair
+        beside the figure; `network-site`'s standing notice says it to somebody deciding whether to
+        mine; this says it to somebody who came to read the art credits and found a chain.
+
+        Present tense and no schedule — "not yet listed" describes a date that does not exist — and
+        no figure, because the number would be a fourth copy of an operator's decision sitting in a
+        bundle behind a CDN, going stale the next time it is changed.
+
+        The clause that did NOT move is the one that matters most on a games client: no market and
+        no listing, so nothing a player wins here can be sold. That is asserted first.
+      */}
       <p>
         Underneath all of it is Hearth, a chain that runs a real EVM. Solidity contracts deploy to
         it, and MetaMask, ethers, viem, Hardhat and Foundry work against it without special cases,
         because it is held to Ethereum&apos;s published test vectors. Its currency, EMBER, is what
         the wider ecosystem pays in, and you can mine it from a browser tab on a key that never
-        leaves your machine. EMBER carries no monetary value, and nothing here is an offer to buy
-        or sell anything.
+        leaves your machine. EMBER has no market and no listing, so nothing you win here can be
+        sold. It does carry a price on CloudsForge screens, and that price is one we set ourselves
+        rather than one anybody has paid for it. Nothing here is an offer to buy or sell anything.
       </p>
     </section>
   )

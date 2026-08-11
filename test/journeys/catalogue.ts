@@ -379,6 +379,76 @@ export const CATALOGUE: readonly Scenario[] = [
     },
   },
 
+  /**
+   * THIS PAGE SAID EMBER HAD NO MONETARY VALUE WHILE THE ESTATE WAS PRINTING A DOLLAR FIGURE.
+   *
+   * It is the only page in this client that says anything at all about what the currency is worth,
+   * which is what makes one stale sentence load-bearing: a player who reads it and later sees a
+   * total on hub has caught the company contradicting itself, and the sentence they will discard
+   * is this one. Corrected 2026-08-11 (micro-org#365); the rate has been administered rather than
+   * absent since 2026-08-10 at 19:13:30Z.
+   *
+   * ── WHY THIS IS ITS OWN SCENARIO AND NOT TWO MORE LINES IN BJ-EMB-13 ──────────────────────────
+   *
+   * BJ-EMB-13 asserts a fetched string is rendered verbatim; its failure message sends somebody to
+   * the manifest. This asserts a claim the bundle owns outright. Folding them together means one
+   * red test with two unrelated diagnoses, and the reader of the failure guesses which.
+   *
+   * ── AND WHY IT IS A PAIR ──────────────────────────────────────────────────────────────────────
+   *
+   * micro-org#365's rule, and it is the whole reason a note like this can be worse than nothing:
+   * a check that only proves the price is named passes against a page describing an administered
+   * rate in the vocabulary of a market one, and a check that only proves the attribution passes
+   * against a page that never mentions a price. Each assertion below kills one mutation and they
+   * are not interchangeable.
+   */
+  {
+    id: 'BJ-EMB-PRICE',
+    title: 'the credits page names EMBER’s price and says whose it is, and never denies it has one',
+    tier: 2,
+    asserts: 'presentation',
+    async run(surface) {
+      const session = await renderOnlyWithStubbedNetwork(surface.origin, { path: '/credits', storage: SIGNED_IN, stubs: BASE })
+      try {
+        const text = await assertMounted(session)
+
+        // Kills: deleting the "no market and no listing" clause. It is the half that did not
+        // change and the half a player actually needs — nothing won in this game can be sold.
+        assert.ok(
+          /no market and no listing/i.test(text),
+          `the credits page no longer says EMBER has no market or listing. It says: ${text.slice(-400)}`,
+        )
+
+        // Kills: dropping the price sentence back to silence, leaving a page that names a currency
+        // and says nothing about its value while hub prints one.
+        assert.ok(
+          /\bprice\b/i.test(text),
+          `the credits page says nothing about EMBER having a price. It says: ${text.slice(-400)}`,
+        )
+
+        // Kills: naming the price and not whose it is. Unattributed, it reads as a market price,
+        // which is the same defect pointing the other way.
+        assert.ok(
+          text.includes('we set ourselves'),
+          `the credits page names a price and not whose it is. It says: ${text.slice(-400)}`,
+        )
+
+        // Kills: a revert. "EMBER carries no monetary value" is the exact sentence that stood here
+        // for a day after it stopped being true, and restoring it is the likeliest mutation there
+        // is — the words read as prudent, which is why nobody re-checks them.
+        for (const stale of [/no monetary value/i, /\bno price\b/i, /\bworth nothing\b/i]) {
+          assert.equal(
+            stale.test(text),
+            false,
+            `the credits page denies EMBER has a value (${stale}). It has had an administered price since 2026-08-10.`,
+          )
+        }
+      } finally {
+        await session.close()
+      }
+    },
+  },
+
   /* ---- doc 22 BJ-EMB-14 ------------------------------------------------ */
   {
     id: 'BJ-EMB-14',
