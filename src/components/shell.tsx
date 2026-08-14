@@ -9,7 +9,7 @@
  * whole navigation, so it is a `<nav>` with real links and a real current-page marker, and it is
  * keyboard navigable in source order.
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CloudsForgeBar,
   CloudsForgeFooter,
@@ -25,8 +25,13 @@ import { useSession } from '../lib/auth.tsx'
 import { useGame } from '../lib/game.tsx'
 import { NAV, indexable, pageTitle, routeFor } from '../lib/routes.ts'
 import { HudStrip } from './hud.tsx'
+import { setViewedNetwork, viewedNetwork, type ViewedNetwork } from '../lib/viewed.ts'
 
 export function AppShell() {
+  // The viewed network: in-tab memory, defaulting to the hostname's own (micro-org#459).
+  // `setViewedNetwork` runs first in the handler below so the remounted tree reads the new value
+  // on its very first render.
+  const [viewed, setViewed] = useState<ViewedNetwork>(viewedNetwork())
   const { account, signIn, signOut } = useSession()
   const { missing } = useGame()
 
@@ -57,12 +62,28 @@ export function AppShell() {
         that can start it. `hosts().hub` rather than a literal, because this bundle is served from
         localhost, from a preview host and from the apex.
       */}
+      {/*
+        In-app network context (micro-org#459, the combined view). The reader's choice lives in
+        `lib/viewed.ts` — module memory, never storage — and the `key` on the Outlet below is the
+        refetch mechanism: switching remounts the page tree, and `apiBase()` reads `viewedHosts()`,
+        so the same page re-reads itself from the other estate WITHOUT going anywhere. The band and
+        the switcher both follow the selection, so testnet data under a mainnet address bar is
+        never unmarked. The bar also stamps `?net=` onto its product links, which is what carries
+        the choice across a product switch — every surface is its own origin, so nothing else can.
+      */}
       <CloudsForgeBar
         current={PRODUCT}
         account={account}
         onSignIn={() => signIn()}
         onSignOut={signOut}
         mining={miningOnHub(hosts().hub)}
+        networkSwitch={{
+          selected: viewed,
+          onSelect: (n) => {
+            setViewedNetwork(n)
+            setViewed(n)
+          },
+        }}
       />
 
       {/*
@@ -111,7 +132,7 @@ export function AppShell() {
         disagree. `ek-main` keeps every layout rule this page already had.
       */}
       <MainRegion className="ek-main">
-        <Outlet />
+        <Outlet key={viewed} />
       </MainRegion>
 
       {/*
