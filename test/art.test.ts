@@ -98,7 +98,7 @@ describe('the generated catalogue', () => {
      * path and the suite was green.
      */
     const urls = [
-      ...speciesWithArt().map((id) => speciesArt(id, 'card')),
+      ...speciesWithArt().map((id) => speciesArt(id, 'portrait')),
       ...ELEMENTS.map((e) => typeIcon(e)),
       titleArt('wordmark'),
     ].filter((u): u is string => u !== null)
