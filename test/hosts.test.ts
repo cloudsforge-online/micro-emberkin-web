@@ -50,7 +50,15 @@ describe('apiBase', () => {
 
   it('resolves the same host when the page is served from another estate surface', () => {
     removeWindow()
-    installWindow('https://worlds.example.com/')
+    // `<apex>/worlds`, not `worlds.<apex>`. Forge Worlds became a folder on the apex in wave 3e of
+    // the consolidation, so `worlds.` stopped being a subdomain `cloudsforgeHosts()` strips — and
+    // a page opened on the old hostname would make the WHOLE name the apex, resolving this
+    // surface to `<this>.worlds.example.com`, one label too deep.
+    //
+    // The scenario is unchanged and is the reason this fixture exists: a reader arrives here FROM
+    // Forge Worlds, so the page is served from another estate surface, and this surface's own host
+    // must still resolve to its own hostname rather than to something under the referrer's.
+    installWindow('https://example.com/worlds/')
     assert.equal(apiBase(), 'https://emberkin.example.com')
   })
 
