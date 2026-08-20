@@ -23,6 +23,7 @@
  * the README's scope note; nothing in this repository implies the models were generated.
  */
 import { ART, type ArtEntry } from '../art/catalogue.ts'
+import { publicPath } from './routes.ts'
 
 export type SpeciesArtSize = 'thumb' | 'portrait'
 
@@ -44,11 +45,26 @@ for (const entry of ART) {
   else set.set(entry.slug, [entry])
 }
 
+/**
+ * One entry, with its `path` MOUNTED — which is the reason every accessor below goes through here
+ * rather than reading `ART` itself.
+ *
+ * `src/art/catalogue.ts` is generated and `test/art.test.ts` re-renders it byte for byte from
+ * `public/art/MANIFEST.json`, asserting that every `path` starts with `/art/`. That prefix is what
+ * NGINX serves the file from and it has to stay exactly that in the table. But this bundle is served
+ * from `<apex>/worlds/emberkin` since the apex consolidation, and a browser handed `/art/species/...`
+ * asks the APEX for it — vite's `base` rewrites `src=` in `index.html` and static imports, and never
+ * a string literal inside a module.
+ *
+ * So the mount is composed HERE, at the one boundary where a catalogue row stops being data and
+ * becomes a URL a browser will fetch. Every `?.path` accessor below inherits it, and so does any
+ * accessor added later.
+ */
 function lookup(set: string, slug: string, size?: string): ArtEntry | null {
   const entries = bySet.get(set)?.get(slug)
   if (!entries || entries.length === 0) return null
-  if (!size) return entries[0] ?? null
-  return entries.find((e) => e.size === size) ?? null
+  const entry = size ? entries.find((e) => e.size === size) : entries[0]
+  return entry ? { ...entry, path: publicPath(entry.path) } : null
 }
 
 /**

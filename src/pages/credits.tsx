@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react'
 import { titleArt } from '../lib/art.ts'
 import { ART } from '../art/catalogue.ts'
+import { publicPath } from '../lib/routes.ts'
 
 interface Manifest {
   generator?: string
@@ -32,7 +33,7 @@ export function CreditsPage() {
 
   useEffect(() => {
     let live = true
-    fetch('/art/MANIFEST.json', { credentials: 'omit' })
+    fetch(publicPath('/art/MANIFEST.json'), { credentials: 'omit' })
       .then((res) => (res.ok ? (res.json() as Promise<Manifest>) : Promise.reject(new Error(String(res.status)))))
       .then((m) => live && setManifest(m))
       .catch(() => live && setFailed(true))
