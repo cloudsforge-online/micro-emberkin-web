@@ -41,7 +41,7 @@ const directives = nginx
 
 /** The alternation inside nginx's enumerated `location ~ ^/(…)` block. */
 function nginxPaths(): string[] {
-  const match = /location\s+~\s+\^\/\(([^)]+)\)/.exec(directives)
+  const match = /location\s+~\s+\^\/worlds\/emberkin\/\(([^)]+)\)/.exec(directives)
   assert.ok(match, 'nginx.conf has no enumerated route block')
   return (match[1] ?? '').split('|').map((p) => p.trim())
 }
@@ -140,28 +140,36 @@ describe('nginx serves every route the router owns', () => {
   })
 
   it('matches the index exactly', () => {
-    assert.match(directives, /location\s+=\s+\/\s*\{/)
+    assert.match(directives, /location\s+=\s+\/worlds\/emberkin\s*\{/)
   })
 
   it('KEEPS THE 404 — error_page, never a try_files fallback to the shell', () => {
-    assert.ok(directives.includes('error_page 404 /index.html'), 'the shell is not served through error_page')
+    assert.ok(directives.includes('error_page 404 /worlds/emberkin/index.html'), 'the shell is not served through error_page')
     const banned = /try_files\s+\$uri\s+(\$uri\/\s+)?\/index\.html/
     assert.ok(!banned.test(directives), 'an unknown address would be answered 200 with the app shell')
   })
 
   it('404s a missing asset rather than handing it the shell', () => {
     // A JavaScript request answered with HTML fails with a syntax error naming the wrong file.
-    assert.match(directives, /location \/assets\/\s*\{[^}]*try_files \$uri =404/s)
+    assert.match(directives, /location \/worlds\/emberkin\/assets\/\s*\{[^}]*try_files \$uri =404/s)
   })
 
   it('never caches index.html — on EVERY location that serves it', () => {
-    // `location = /index.html` only matches that literal path. `location = /` and the enumerated
-    // route block serve the same file through `try_files` without re-entering it, so the header
-    // has to be repeated. The web template omits it from both, which leaves `/` — the
-    // most-requested address in the application — with no cache directive at all.
-    assert.match(directives, /location = \/index\.html\s*\{[^}]*no-store/s)
-    assert.match(directives, /location = \/\s*\{[^}]*no-store/s)
-    assert.match(directives, /location ~ \^\/\([^)]+\)[^{]*\{[^}]*no-store/s)
+    // `location = /worlds/emberkin/index.html` only matches that literal path. The front door and
+    // the enumerated route block serve the same file through `try_files` without re-entering it,
+    // so the header has to be repeated. The web template omits it from all of them, which would
+    // leave the front door — the most-requested address in the application — with no cache
+    // directive at all.
+    //
+    // THE FRONT DOOR IS TWO LOCATIONS SINCE THE MOUNT, and both are checked. `/worlds/emberkin`
+    // and `/worlds/emberkin/` are different addresses to nginx's `=` matcher, a link in the wild
+    // will use either, and a bundle that answers one and 404s the other is broken for half its
+    // inbound traffic. On an apex-mounted surface there is no `location = /` to fall back on —
+    // that address belongs to micro-site now.
+    assert.match(directives, /location = \/worlds\/emberkin\/index\.html\s*\{[^}]*no-store/s)
+    assert.match(directives, /location = \/worlds\/emberkin\s*\{[^}]*no-store/s)
+    assert.match(directives, /location = \/worlds\/emberkin\/\s*\{[^}]*no-store/s)
+    assert.match(directives, /location ~ \^\/worlds\/emberkin\/\([^)]+\)[^{]*\{[^}]*no-store/s)
   })
 
   it('REPEATS the security headers in every location that sets a header of its own', () => {
@@ -172,7 +180,7 @@ describe('nginx serves every route the router owns', () => {
      * the directive it added is visible in the diff and the three it removed are not.
      *
      * The web template has exactly this bug: it sets Cache-Control inside `location /assets/` and
-     * `location = /index.html`, and therefore serves every hashed asset in every application cut
+     * `location = /worlds/emberkin/index.html`, and therefore serves every hashed asset in every application cut
      * from it with no nosniff header. Measured against a running image, then fixed here.
      */
     const blocks = directives.match(/location[^{]*\{[^}]*\}/gs) ?? []

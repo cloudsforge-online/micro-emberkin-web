@@ -63,6 +63,7 @@ import { access, constants, readdir } from 'node:fs/promises'
 import { homedir, platform } from 'node:os'
 import { join } from 'node:path'
 import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright-core'
+import { publicPath } from '../../src/lib/routes.ts'
 
 /* ---- finding a browser --------------------------------------------- */
 
@@ -484,7 +485,17 @@ export async function renderOnlyWithStubbedNetwork(
     await route.abort('connectionrefused')
   })
 
-  const target = `${origin}${options.path ?? '/'}`
+  // ── SCENARIOS NAME ROUTER PATHS; THE ADDRESS BAR TAKES PUBLIC ONES ──────────────────────────
+  //
+  // Every `path:` in the catalogue is a route this client owns — `/party`, `/settings`, `/nope`.
+  // Since the mount those are no longer addresses: the public one is `/worlds/<title>/party`, and
+  // the router is mounted with `basename` so that it sees `/party` again once the shell loads.
+  //
+  // Composing here rather than at each call site keeps the scenarios written in the vocabulary
+  // they reason in — a scenario asserting "/nope answers 404" is making a claim about a route the
+  // router does not own, not about a folder on the apex. It also means the mount moved in exactly
+  // two places in this harness: here, and `fetchStatus`.
+  const target = `${origin}${publicPath(options.path ?? '/')}`
   const response = await page.goto(target, { waitUntil: 'domcontentloaded' })
   // A SPA has mounted nothing at `domcontentloaded`, and `networkidle` is not enough either: a
   // bundle that 404s leaves the network perfectly idle. So wait for the application's own output.

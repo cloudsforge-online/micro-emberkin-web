@@ -32,12 +32,13 @@ import { PartyPage } from './pages/party.tsx'
 import { SatchelPage } from './pages/satchel.tsx'
 import { SettingsPage } from './pages/settings.tsx'
 import { WardrobePage } from './pages/wardrobe.tsx'
+import { BASE } from './lib/routes.ts'
 
 const PlayPage = lazy(async () => ({ default: (await import('./pages/play.tsx')).PlayPage }))
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={BASE}>
       <ScrollToTop />
       <AuthProvider>
         <GameProvider>

@@ -30,6 +30,27 @@ import { fileURLToPath } from 'node:url'
 
 const REPO = fileURLToPath(new URL('../../', import.meta.url))
 
+/**
+ * The folder this bundle is mounted at, read from the app's own source rather than restated.
+ *
+ * ── WHAT `root` MEANS HERE, AND WHY IT IS NOT NGINX'S `root` ──────────────────────────────────
+ *
+ * `buildBundle` returns vite's `dist`, and vite does not put the output under `base` — `base`
+ * only changes the URLs written INTO index.html. The Dockerfile is what creates the folder:
+ * `COPY --from=build /app/dist /usr/share/nginx/html<MOUNT>`. So on the real server nginx's
+ * `root` is `html` and this bundle sits one level down; in this harness the directory we hold IS
+ * that lower level.
+ *
+ * Which means a request for `<MOUNT>/assets/x.js` maps to `dist/assets/x.js` — the mount comes
+ * OFF before the path touches the disk. Serving `dist<MOUNT>/assets/x.js` would 404 every asset
+ * in the bundle and the whole journey suite would fail on a missing script rather than on
+ * anything real.
+ *
+ * Read from `src/lib/routes.ts` so that a mount change moves this harness with it; a literal
+ * here would be a second copy of the one fact this whole wave turns on.
+ */
+import { BASE, publicPath } from '../../src/lib/routes.ts'
+
 /* ---- parsing nginx.conf --------------------------------------------- */
 
 type Modifier = '=' | '^~' | '~' | '~*' | ''
@@ -93,7 +114,7 @@ export function readNginx(repo = REPO): NginxModel {
         'scenario in this suite would then pass against a surface with no 404 at all.',
     )
   }
-  return { locations: parseLocations(conf), honest404: /error_page\s+404\s+\/index\.html/.test(conf) }
+  return { locations: parseLocations(conf), honest404: new RegExp(`error_page\\s+404\\s+${BASE}/index\\.html`).test(conf) }
 }
 
 /* ---- nginx's matching order ----------------------------------------- */
@@ -107,7 +128,9 @@ interface Decision {
 function decide(body: string): Decision | null {
   const ret = /return\s+200\s+"([^"]*)"/.exec(body)
   if (ret) return { kind: 'literal', text: (ret[1] ?? '').replace(/\\n/g, '\n') }
-  if (/try_files\s+\/index\.html/.test(body)) return { kind: 'shell' }
+  // `try_files <MOUNT>/index.html` — the front door names the shell by its FULL path now, because
+  // nginx resolves a try_files argument against `root`, which is `html` and not the mount.
+  if (new RegExp(`try_files\\s+${BASE}/index\\.html`).test(body)) return { kind: 'shell' }
   if (/try_files\s+\$uri/.test(body)) return { kind: 'file' }
   return null
 }
@@ -234,7 +257,9 @@ async function boot(repo: string): Promise<Surface> {
 
     // `try_files $uri =404`: a real file or nothing. A missing asset must NOT become the shell —
     // a JavaScript request answered with HTML fails with a syntax error naming the wrong file.
-    const onDisk = join(root, normalize(path).replace(/^(\.\.[/\\])+/, ''))
+    // The mount comes off first — see BASE above: the directory we hold is already the mount.
+    const onMount = path.startsWith(`${BASE}/`) ? path.slice(BASE.length) : path
+    const onDisk = join(root, normalize(onMount).replace(/^(\.\.[/\\])+/, ''))
     if (!onDisk.startsWith(resolve(root)) || !existsSync(onDisk) || !statSync(onDisk).isFile()) {
       return notFound()
     }
@@ -257,7 +282,9 @@ async function boot(repo: string): Promise<Surface> {
     root,
     nginx,
     async fetchStatus(path: string) {
-      const response = await fetch(`${origin}${path}`, { redirect: 'manual' })
+      // A ROUTER path in, a public address out — the same conversion `page.goto` makes, and for
+      // the same reason. See the note there.
+      const response = await fetch(`${origin}${publicPath(path)}`, { redirect: 'manual' })
       return {
         status: response.status,
         body: await response.text(),

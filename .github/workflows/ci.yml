@@ -147,9 +147,23 @@ jobs:
           entry=$(node -e "
             const {readFileSync}=require('node:fs');
             const html=readFileSync('dist/index.html','utf8');
-            const m=/src=\"(\/assets\/[^\"]+\.js)\"/.exec(html);
+            // ── THE URL CARRIES THE MOUNT; THE DIRECTORY DOES NOT ──────────────────────────
+            //
+            // vite writes `src=\"/worlds/emberkin/assets/index-<hash>.js\"` because `base` is the
+            // mount, and it does NOT put the output under it: `dist/assets/` is where the file
+            // actually is, and the Dockerfile is what creates the folder by copying `dist` to
+            // `html/worlds/emberkin`. So the URL is matched WHOLE and then the mount comes off
+            // before the path touches the disk.
+            //
+            // The old pattern required the value to START with `/assets/`, so it stopped matching
+            // altogether and this step failed loudly — which is the good outcome. A pattern that
+            // matched the `/assets/…` SUBSTRING would have found a path that does not exist,
+            // `wc -c` would have failed on a missing file, and the next person would have read a
+            // size error rather than a mount error.
+            const m=/src=\"([^\"]*\/assets\/[^\"]+\.js)\"/.exec(html);
             if(!m){console.error('no entry script in dist/index.html');process.exit(1)}
-            process.stdout.write('dist'+m[1]);
+            const onDisk=m[1].replace(/^\/worlds\/emberkin/, '');
+            process.stdout.write('dist'+onDisk);
           ")
           size=$(wc -c < "$entry")
           echo "entry chunk $entry is $size bytes"
@@ -234,7 +248,7 @@ jobs:
           set -uo pipefail
           directives=$(grep -v '^[[:space:]]*#' nginx.conf)
           if printf '%s\n' "$directives" | grep -nE 'try_files[[:space:]]+\$uri[[:space:]]+(\$uri/[[:space:]]+)?/index\.html'; then
-            echo "::error::unknown paths must 404; serve the shell through error_page 404 /index.html"
+            echo "::error::unknown paths must 404; serve the shell through error_page 404 /worlds/emberkin/index.html"
             exit 1
           fi
           # `grep -q PATTERN <<<"$var"` rather than `printf '%s\n' "$var" | grep -q PATTERN`.
@@ -242,7 +256,7 @@ jobs:
           # and `pipefail` promoted that SIGPIPE (exit 141) to a failed step — a gate that failed for
           # no reason and passed on re-run, which teaches re-running instead of reading. The here-string
           # is byte-identical input with the same exit status and no pipe, so the rule is unchanged.
-          grep -q 'error_page 404 /index.html' <<<"$directives"
+          grep -q 'error_page 404 /worlds/emberkin/index.html' <<<"$directives"
           echo "ok: unknown paths answer 404"
 
       - name: The auth callback is redeemed before the app renders
@@ -316,7 +330,7 @@ jobs:
           set -euo pipefail
           docker run -d --name ci-emberkin-web -p 127.0.0.1:8080:8080 emberkin-web:ci
           for attempt in $(seq 1 20); do
-            code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/ || true)
+            code=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/ || true)
             [ "$code" = "200" ] && break
             sleep 1
           done
@@ -324,12 +338,29 @@ jobs:
 
           # A route this app OWNS must survive a hard refresh. /dex is DEEP_LINK_PATH in
           # src/lib/routes.ts, and test/routes.test.ts fails if the two ever disagree.
-          deep=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/dex || true)
+          deep=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/dex || true)
           [ "$deep" = "200" ] || { echo "::error::/dex returned $deep — an owned route must be served the shell"; exit 1; }
 
           # A route it does NOT own must answer 404 while still serving the shell, so the reader
           # gets a real page and the status line tells the truth.
-          unknown=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/nope/not/a/route || true)
+
+          # ── TWO ADDRESSES THAT MUST BE EMPTY, AND THEY ARE THE POINT OF THE MOUNT ──────────
+          #
+          # This image is built for `/worlds/emberkin` and copied there by the Dockerfile. If it were
+          # ever copied to the document root instead, `/` would answer 200 with this game's shell
+          # — and on the apex that address is MICRO-SITE's home page. The gateway routes by path,
+          # so a container answering `/` does not shadow anything by itself; but the same mistake
+          # in the Dockerfile is what would put the game's index.html at the apex root the moment
+          # a future router widened. Cheap to assert, and it fails loudly rather than subtly.
+          #
+          # `/robots.txt` for the sharper version of it: a folder has no robots.txt of its own.
+          # One served here would be a SECOND document at an address micro-site already owns, and
+          # whichever won would be decided by router priority rather than by anybody's intent.
+          root=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/ || true)
+          [ "$root" = 404 ] || { echo "FAIL: / answered $root; this image belongs at /worlds/emberkin and nowhere else"; exit 1; }
+          robots=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/robots.txt || true)
+          [ "$robots" = 404 ] || { echo "FAIL: /robots.txt answered $robots; a folder has no robots.txt, micro-site owns that address"; exit 1; }
+          unknown=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/nope/not/a/route || true)
           [ "$unknown" = "404" ] || { echo "::error::an unknown address returned $unknown; it must be 404"; exit 1; }
           # NOT A PIPE INTO `grep -q` — the hazard this file already avoids with here-strings
           # elsewhere, on the one check that still had it. grep -q exits at its first match and
@@ -342,7 +373,7 @@ jobs:
           # micro-hub-web#16 then failed here twice in a row with the build green in the same run.
           # Measured 2026-08-10 — micro-org#347. Capturing first leaves no pipe to close early, and
           # `case` is an exact glob rather than a regex.
-          shell_404=$(curl -s -m 5 http://127.0.0.1:8080/nope/not/a/route || true)
+          shell_404=$(curl -s -m 5 http://127.0.0.1:8080/worlds/emberkin/nope/not/a/route || true)
           case "$shell_404" in
             *'<div id="root">'*) ;;
             *) echo "::error::the 404 did not serve the app shell"; exit 1 ;;
@@ -350,15 +381,15 @@ jobs:
 
           # The art and the models are in the image and are served as themselves. A .glb answered
           # with the app shell parses as garbage inside GLTFLoader and names neither file.
-          art=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/art/species/cindercub-256x256.png || true)
+          art=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/art/species/cindercub-256x256.png || true)
           [ "$art" = "200" ] || { echo "::error::a species portrait returned $art"; exit 1; }
-          model=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/game/models/creatures/cindercub.glb || true)
+          model=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/game/models/creatures/cindercub.glb || true)
           [ "$model" = "200" ] || { echo "::error::a creature model returned $model"; exit 1; }
           # The glb references its PBR maps by RELATIVE URI, two levels up. If that layout broke,
           # every creature would render untextured and nothing would error.
-          tex=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/game/textures/creatures/fur_albedo.png || true)
+          tex=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/game/textures/creatures/fur_albedo.png || true)
           [ "$tex" = "200" ] || { echo "::error::a creature texture returned $tex — the glb relative URIs are broken"; exit 1; }
-          missing=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/art/species/not-a-species.png || true)
+          missing=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/worlds/emberkin/art/species/not-a-species.png || true)
           [ "$missing" = "404" ] || { echo "::error::a missing asset returned $missing; it must 404 rather than get the shell"; exit 1; }
 
           echo "ok: owned routes are served, assets are assets, unknown addresses 404 with the shell"

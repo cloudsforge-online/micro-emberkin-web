@@ -36,6 +36,41 @@ export interface RouteDef {
   readonly protected: boolean
 }
 
+/**
+ * ── WHERE THIS BUNDLE IS MOUNTED, AND WHY IT IS TWO SEGMENTS ─────────────────────────────────
+ *
+ * Emberkin used to be a hostname. It is a FOLDER INSIDE ANOTHER FOLDER now: `/worlds/emberkin`, wave 3f
+ * of the consolidation argued in micro-deploy `docs/apex-consolidation.md`. The registry says the
+ * same thing in one line — `subdomain: ''`, `basePath: '/worlds/emberkin'`.
+ *
+ * The nesting is not decoration. This surface's own registry row calls it a TITLE rather than a
+ * sixth product: it is PLAYED THROUGH Forge Worlds, appears in no product switcher, and is reached
+ * from the catalogue. `<apex>/worlds/emberkin` states that relationship in the address; a sibling folder
+ * on the apex would have stated the opposite.
+ *
+ *   A ROUTER PATH is what `react-router` matches, relative to the mount — everything in `ROUTES`
+ *     below, and `basename` in `src/app.tsx` puts the prefix back.
+ *
+ *   A PUBLIC PATH is what the address bar shows and what a crawler is handed: `/worlds/emberkin/…`.
+ *     Every `<loc>` in the sitemap and every `location` in `nginx.conf`.
+ *
+ * `publicPath()` is the one crossing and the only place `BASE` is concatenated.
+ *
+ * ── THE GATEWAY RULE FOR THIS PATH MUST OUTRANK THE ONE FOR `/worlds` ───────────────────────
+ *
+ * `/worlds/emberkin` matches `PathPrefix(`/worlds/`)`, which is Forge Worlds' own bundle rule. Traefik
+ * resolves that overlap by priority and nothing else, so the estate gives a NESTED bundle 650
+ * against the parent's 600. Get it wrong and the catalogue answers for the game: a 200 carrying
+ * the wrong application, which renders and is not this one.
+ */
+export const BASE = '/worlds/emberkin'
+
+/** A router path as a public one. No trailing slash: the game is `/worlds/emberkin`. */
+export function publicPath(path: string): string {
+  const rooted = path.startsWith('/') ? path : `/${path}`
+  return rooted === '/' ? BASE : `${BASE}${rooted}`
+}
+
 export const ROUTES: readonly RouteDef[] = [
   {
     path: '/',
