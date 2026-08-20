@@ -147,9 +147,23 @@ jobs:
           entry=$(node -e "
             const {readFileSync}=require('node:fs');
             const html=readFileSync('dist/index.html','utf8');
-            const m=/src=\"(\/assets\/[^\"]+\.js)\"/.exec(html);
+            // ── THE URL CARRIES THE MOUNT; THE DIRECTORY DOES NOT ──────────────────────────
+            //
+            // vite writes `src=\"/worlds/emberkin/assets/index-<hash>.js\"` because `base` is the
+            // mount, and it does NOT put the output under it: `dist/assets/` is where the file
+            // actually is, and the Dockerfile is what creates the folder by copying `dist` to
+            // `html/worlds/emberkin`. So the URL is matched WHOLE and then the mount comes off
+            // before the path touches the disk.
+            //
+            // The old pattern required the value to START with `/assets/`, so it stopped matching
+            // altogether and this step failed loudly — which is the good outcome. A pattern that
+            // matched the `/assets/…` SUBSTRING would have found a path that does not exist,
+            // `wc -c` would have failed on a missing file, and the next person would have read a
+            // size error rather than a mount error.
+            const m=/src=\"([^\"]*\/assets\/[^\"]+\.js)\"/.exec(html);
             if(!m){console.error('no entry script in dist/index.html');process.exit(1)}
-            process.stdout.write('dist'+m[1]);
+            const onDisk=m[1].replace(/^\/worlds\/emberkin/, '');
+            process.stdout.write('dist'+onDisk);
           ")
           size=$(wc -c < "$entry")
           echo "entry chunk $entry is $size bytes"
