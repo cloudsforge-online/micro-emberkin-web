@@ -23,6 +23,7 @@
  */
 import type { DexEntry } from './emberkin.ts'
 import { speciesArt } from './art.ts'
+import { publicPath } from './routes.ts'
 
 export interface StatBlock {
   readonly hp: number
@@ -129,7 +130,7 @@ export interface Content {
  * serves them as immutable static files and the browser caches them across deploys of the app
  * itself.
  */
-const CONTENT_BASE = '/game/data'
+const CONTENT_BASE = publicPath('/game/data')
 
 const FILES = ['species', 'visuals', 'moves', 'types', 'campaign'] as const
 

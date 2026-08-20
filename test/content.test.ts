@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, it } from 'node:test'
 import { displayName, loadContent, reconcile, type Content } from '../src/lib/content.ts'
 import type { DexEntry } from '../src/lib/emberkin.ts'
+import { BASE } from '../src/lib/routes.ts'
 
 const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../${path}`, import.meta.url)), 'utf8')
 
@@ -29,15 +30,27 @@ function diskFetch(calls: string[]): typeof fetch {
 }
 
 describe('loadContent — the requests', () => {
-  it('asks for exactly the five files, from /game/data', async () => {
+  /*
+   * MOUNTED, and asserted against `BASE` rather than a literal.
+   *
+   * These five reads shipped broken for one release of the apex consolidation: `CONTENT_BASE` was
+   * the literal `/game/data`, vite's `base` does not rewrite a string inside a module, and every
+   * request went to `<apex>/game/data/...` instead of `<apex>/worlds/emberkin/game/data/...`. The
+   * whole dex rendered empty. This test passed throughout, because it asserted the same literal the
+   * source had.
+   *
+   * Composing from `BASE` is what makes it a real check: a future re-mount moves both sides at once,
+   * and a hand-spelled root-relative path in `content.ts` now fails here.
+   */
+  it('asks for exactly the five files, from the MOUNTED /game/data', async () => {
     const calls: string[] = []
     await loadContent(diskFetch(calls))
     assert.deepEqual(calls.sort(), [
-      '/game/data/campaign.json',
-      '/game/data/moves.json',
-      '/game/data/species.json',
-      '/game/data/types.json',
-      '/game/data/visuals.json',
+      `${BASE}/game/data/campaign.json`,
+      `${BASE}/game/data/moves.json`,
+      `${BASE}/game/data/species.json`,
+      `${BASE}/game/data/types.json`,
+      `${BASE}/game/data/visuals.json`,
     ])
   })
 
