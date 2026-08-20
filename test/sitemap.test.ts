@@ -39,8 +39,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import { ENV_LABELS } from '@cloudsforge/ui'
-import { robotsTxt } from '@cloudsforge/ui/sitemap'
-import { PUBLIC_PATHS, ROUTES, indexable } from '../src/lib/routes.ts'
+import { BASE, PUBLIC_PATHS, ROUTES, indexable, publicPath } from '../src/lib/routes.ts'
 
 const nginx = readFileSync(new URL('../nginx.conf', import.meta.url), 'utf8')
 
@@ -66,7 +65,7 @@ describe('the sitemap nginx serves', () => {
      * on a preview deployment and on testnet, silently, in the one document a crawler treats as
      * authoritative.
      */
-    const xml = servedBody('/sitemap.xml')
+    const xml = servedBody('/worlds/emberkin/sitemap.xml')
     assert.ok(!xml.includes('cloudsforge.online'), 'the sitemap names the production apex')
     assert.ok(!xml.includes('localhost'), 'the sitemap names localhost')
     const locs = [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1] ?? '')
@@ -78,9 +77,12 @@ describe('the sitemap nginx serves', () => {
   })
 
   it('lists every address this surface invites a crawler to', () => {
-    const xml = servedBody('/sitemap.xml')
+    const xml = servedBody('/worlds/emberkin/sitemap.xml')
     for (const path of PUBLIC_PATHS) {
-      const address = path === '/' ? '$scheme://$host' : `$scheme://$host${path}`
+      // `publicPath()`, the same crossing the app uses: every `<loc>` carries the mount now, and
+      // the index is the mount itself rather than a bare host — a trailing slash is the classic way
+      // one page acquires two addresses and splits its own indexing.
+      const address = `$scheme://$host${publicPath(path)}`
       assert.ok(xml.includes(`<loc>${address}</loc>`), `${path} is missing from the sitemap`)
     }
   })
@@ -92,18 +94,23 @@ describe('the sitemap nginx serves', () => {
      * sign-in rather than a page, and what is behind it is one player's own Kin, items and
      * cosmetics. An entry for any of the three is an invitation this file cannot keep.
      */
-    const xml = servedBody('/sitemap.xml')
+    const xml = servedBody('/worlds/emberkin/sitemap.xml')
     const listed = [...xml.matchAll(/<loc>\$scheme:\/\/\$host([^<]*)<\/loc>/g)].map((m) =>
       m[1] === '' ? '/' : (m[1] ?? ''),
     )
-    assert.deepEqual([...listed].sort(), [...PUBLIC_PATHS].sort())
+    // PUBLIC_PATHS are ROUTER paths and a sitemap publishes PUBLIC ones, which since the nesting
+    // are two different strings — `/dex` against `/worlds/emberkin/dex`. `publicPath` is the one
+    // conversion between them, so comparing through it keeps this test asserting what it always
+    // asserted (the sitemap lists exactly the public routes and nothing else) rather than
+    // re-stating the mount a fourth time.
+    assert.deepEqual([...listed].sort(), PUBLIC_PATHS.map(publicPath).sort())
     for (const gated of ['/party', '/satchel', '/wardrobe']) {
       assert.ok(!xml.includes(gated), `the sitemap invites a crawler to ${gated}, which needs a session`)
     }
   })
 
   it('is a well-formed urlset in the only schema crawlers implement', () => {
-    const xml = servedBody('/sitemap.xml')
+    const xml = servedBody('/worlds/emberkin/sitemap.xml')
     assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n/)
     assert.match(xml, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/)
     assert.match(xml, /<\/urlset>$/)
@@ -115,7 +122,7 @@ describe('the sitemap nginx serves', () => {
     // applies.
     assert.match(
       nginx,
-      /location = \/sitemap\.xml \{[\s\S]*?types \{ \}[\s\S]*?default_type application\/xml;/,
+      /location = \/worlds\/emberkin\/sitemap\.xml \{[\s\S]*?types \{ \}[\s\S]*?default_type application\/xml;/,
     )
   })
 
@@ -177,8 +184,10 @@ describe('an environment that is not mainnet', () => {
   it('refuses every crawler and serves no sitemap', () => {
     // Both halves matter and neither is sufficient: robots.txt stops the fetch, and a sitemap that
     // still answered would be an invitation contradicting the instruction beside it.
-    assert.match(nginx, /if \(\$cf_env\) \{ return 200 'User-agent: \*\\nDisallow: \/\\n'; \}/)
-    assert.match(nginx, /location = \/sitemap\.xml \{[\s\S]*?if \(\$cf_env\) \{ return 404; \}/)
+    // The robots half moved to micro-site with the document; micro-site already had an
+    // identical `$cf_env` refusal, so a testnet apex answers `Disallow: /` and covers this
+    // surface by construction. The sitemap half below is still this file's to enforce.
+    assert.match(nginx, /location = \/worlds\/emberkin\/sitemap\.xml \{[\s\S]*?if \(\$cf_env\) \{ return 404; \}/)
   })
 
   it('matches a suffixed subdomain as well as a bare environment apex', () => {
@@ -191,21 +200,29 @@ describe('an environment that is not mainnet', () => {
   })
 })
 
-describe('robots.txt', () => {
-  it('is exactly what the design system generates', () => {
-    // Compared with its trailing newline intact: robots.txt is a line-oriented format and a parser
-    // that reads the last line only when it is terminated is a parser that silently loses the
-    // Sitemap directive.
-    assert.equal(
-      servedBody('/robots.txt'),
-      robotsTxt({ indexable: true, sitemapUrl: '$scheme://$host/sitemap.xml' }),
-    )
-  })
-
-  it('points at the sitemap with an absolute address, composed rather than typed', () => {
-    // A relative `Sitemap:` line is invalid per the standard and is ignored; a literal one bakes in
-    // a hostname. `$scheme://$host` is the only form that is both valid and environment-free.
-    assert.match(servedBody('/robots.txt'), /^Sitemap: \$scheme:\/\/\$host\/sitemap\.xml$/m)
+describe('robots.txt — which this surface no longer serves', () => {
+  it('is GONE from this repository, and its one line moved to the apex', () => {
+    // A crawler reads robots.txt at the ORIGIN ROOT and nowhere else. Wave 3f made this bundle
+    // `<apex>/worlds/emberkin`, so `<apex>/worlds/emberkin/robots.txt` is a file nothing will ever request — a
+    // block here could only be dead configuration that READS like a policy.
+    //
+    // There was nothing to carry but the `Sitemap:` line and the `if ($cf_env)` refusal.
+    // micro-site announces `https://$host/worlds/emberkin/sitemap.xml` from the one robots.txt this
+    // origin has, and it already had an identical `$cf_env` branch — so a testnet apex answers
+    // `Disallow: /` and covers this surface by construction rather than by a second copy.
+    //
+    // AGAINST THE DIRECTIVES, NOT THE FILE. The block that used to be here left a comment in its
+    // place saying so, and that comment contains the words `location = /robots.txt`. Matched
+    // against the raw file this fails on its own gravestone — a false negative that reads as
+    // "the deletion did not happen".
+    const served = nginx
+      .split('\n')
+      .filter((line) => !/^\s*#/.test(line))
+      .join('\n')
+    assert.doesNotMatch(served, /location\s*=\s*\/robots\.txt/, 'this surface still serves a robots.txt')
+    assert.doesNotMatch(served, /^Disallow:/m)
+    assert.doesNotMatch(served, /^User-agent:/m)
+    assert.doesNotMatch(served, /Sitemap:/, 'a Sitemap: line survived where nothing fetches it')
   })
 
   it('is not a static file, which an exact-match location would have shadowed', () => {
@@ -230,7 +247,11 @@ describe('the security headers on the documents this file adds', () => {
   it('are repeated in both new locations, because add_header does not accumulate', () => {
     // A location that declares ANY add_header inherits NONE from the server level. Both blocks set
     // Cache-Control, so both have to restate the three security headers or ship without them.
-    for (const path of ['/sitemap.xml', '/robots.txt']) {
+    // ONE DOCUMENT NOW. `robots.txt` left this repository in wave 3f: a crawler reads it at the
+    // ORIGIN ROOT and nowhere else, so `<apex>/worlds/emberkin/robots.txt` is a file nothing fetches, and
+    // micro-site serves the one this origin has. The sitemap stayed — it is fetched at whatever
+    // address announces it, and micro-site's robots.txt announces this one.
+    for (const path of ['/worlds/emberkin/sitemap.xml']) {
       const block = new RegExp(
         `location = ${path.replace('.', '\\.')} \\{([\\s\\S]*?)\\n    \\}`,
       ).exec(nginx)
@@ -245,7 +266,7 @@ describe('the security headers on the documents this file adds', () => {
   it('are repeated in /assets/ and in both static payload prefixes too', () => {
     // /assets/ is the location that serves the code; /art/ and /game/ are 65 MB of generated
     // images and glTF, and a `.glb` sniffed as something else is a renderer executing a guess.
-    for (const prefix of ['/assets/', '/art/', '/game/']) {
+    for (const prefix of ['/assets/', '/art/', '/game/'].map((p) => `${BASE}${p}`)) {
       const block = new RegExp(`location ${prefix} \\{([\\s\\S]*?)\\n    \\}`).exec(nginx)
       assert.ok(block, `no ${prefix} location`)
       assert.match(block[1] ?? '', /X-Content-Type-Options "nosniff"/)

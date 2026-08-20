@@ -16,6 +16,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { BASE } from '../src/lib/routes.ts'
 
 const at = (p: string) => fileURLToPath(new URL(`../${p}`, import.meta.url))
 const HTML = readFileSync(at('index.html'), 'utf8')
@@ -49,7 +50,19 @@ test('a shared link renders as a card, not a bare URL', () => {
   const img = /property="og:image" content="([^"]+)"/.exec(HTML)?.[1]
   assert.ok(img, 'og:image has no content')
   if (img.startsWith('/')) {
-    assert.ok(existsSync(at(`public${img}`)), `og:image points at ${img}, which is not in public/`)
+    // ── THE MOUNT COMES OFF BEFORE THE DISK, BECAUSE public/ IS NOT MOUNTED ────────────────────
+    //
+    // `index.html` names the PUBLIC address, `<BASE>/og-1200x630.png`, and it has to: vite does
+    // not rewrite `content` against `base`, and root-relative would resolve to micro-site's own
+    // card on the apex. But the file itself lives at `public/og-1200x630.png` — the folder is
+    // created by the Dockerfile's `COPY … /usr/share/nginx/html<BASE>`, not by this repository's
+    // tree. So the address is checked against disk with the mount taken back off, which is the
+    // same conversion the served bundle makes in the other direction.
+    const onDisk = img.startsWith(`${BASE}/`) ? img.slice(BASE.length) : img
+    assert.ok(
+      existsSync(at(`public${onDisk}`)),
+      `og:image points at ${img}, which is not in public/ (looked for public${onDisk})`,
+    )
   }
 })
 

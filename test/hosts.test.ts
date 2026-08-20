@@ -44,8 +44,8 @@ describe('apiBase', () => {
 
   it('uses the subdomain in production', () => {
     removeWindow()
-    installWindow('https://emberkin.example.com/dex')
-    assert.equal(apiBase(), 'https://emberkin.example.com')
+    installWindow('https://example.com/worlds/emberkin/dex')
+    assert.equal(apiBase(), 'https://example.com/worlds/emberkin')
   })
 
   it('resolves the same host when the page is served from another estate surface', () => {
@@ -59,14 +59,14 @@ describe('apiBase', () => {
     // Forge Worlds, so the page is served from another estate surface, and this surface's own host
     // must still resolve to its own hostname rather than to something under the referrer's.
     installWindow('https://example.com/worlds/')
-    assert.equal(apiBase(), 'https://emberkin.example.com')
+    assert.equal(apiBase(), 'https://example.com/worlds/emberkin')
   })
 
   it('is re-read per call, not cached in a module constant', () => {
     assert.equal(apiBase(), 'http://localhost:4100')
     removeWindow()
-    installWindow('https://emberkin.example.com/')
-    assert.equal(apiBase(), 'https://emberkin.example.com')
+    installWindow('https://example.com/worlds/emberkin/')
+    assert.equal(apiBase(), 'https://example.com/worlds/emberkin')
   })
 
   it('uses the port the registry records, which is the port the service binds', () => {
@@ -84,15 +84,18 @@ describe('billingBase', () => {
   })
 
   it('is pay.<apex> in production', () => {
-    installWindow('https://emberkin.example.com/')
+    installWindow('https://example.com/worlds/emberkin/')
     assert.equal(billingBase(), 'https://pay.example.com')
   })
 })
 
 describe('pageOrigin', () => {
   it('is the window origin when there is one', () => {
-    installWindow('https://emberkin.example.com/dex')
-    assert.equal(pageOrigin(), 'https://emberkin.example.com')
+    installWindow('https://example.com/worlds/emberkin/dex')
+    // The ORIGIN, which never carries the mount — `window.location.origin` is scheme, host and
+    // port and nothing else. Worth pinning explicitly now that the address it is read from has a
+    // path in it: the two look alike in a log and are not interchangeable anywhere they are used.
+    assert.equal(pageOrigin(), 'https://example.com')
   })
 
   it('is a stable placeholder when there is no document', () => {
@@ -106,7 +109,7 @@ describe('the registry resolves this app without correction', () => {
   // `emberkin` surface, so KNOWN_SUBS contains the subdomain, the apex derives correctly, and the
   // label-stripping workaround this file used to exercise is gone.
   it('strips this app\u2019s own subdomain when deriving the apex', () => {
-    installWindow('https://emberkin.cloudsforge.online/dex')
+    installWindow('https://cloudsforge.online/worlds/emberkin/dex')
     const h = hosts()
     for (const [name, url] of Object.entries(h)) {
       assert.doesNotMatch(
@@ -118,8 +121,8 @@ describe('the registry resolves this app without correction', () => {
   })
 
   it('resolves the API from the registry rather than deriving it', () => {
-    installWindow('https://emberkin.cloudsforge.online/dex')
-    assert.equal(apiBase(), 'https://emberkin.cloudsforge.online')
+    installWindow('https://cloudsforge.online/worlds/emberkin/dex')
+    assert.equal(apiBase(), 'https://cloudsforge.online/worlds/emberkin')
   })
 
   it('carries the port the service actually binds', () => {
@@ -129,7 +132,11 @@ describe('the registry resolves this app without correction', () => {
     const emberkin = SURFACES.find((x) => x.key === 'emberkin')
     assert.ok(emberkin, 'the registry must carry an emberkin surface')
     assert.equal(emberkin.devPort, 4100)
-    assert.equal(emberkin.subdomain, 'emberkin')
+    // NO subdomain since the nesting: the title is a folder under the catalogue, `''` + a
+    // `basePath` of `/worlds/emberkin`. The devPort above is unchanged by that and is the point of
+    // this test — a mount is a fact about an address, a port is a fact about a service.
+    assert.equal(emberkin.subdomain, '')
+    assert.equal(emberkin.basePath, '/worlds/emberkin')
   })
 })
 
