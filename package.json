@@ -1,6 +1,6 @@
 {
   "name": "@cloudsforge/emberkin-web",
-  "version": "2026.8.96",
+  "version": "2026.8.97",
   "packageManager": "pnpm@11.9.0",
   "private": true,
   "description": "Emberkin — the game client for the second Forge Worlds title. Restructured from kindred-resonance web/.",
